@@ -36,6 +36,9 @@
 #endif /* OPENSSL_EXTRA_SSL_GUARD */
 
 #include <wolfssl/openssl/evp.h>
+#ifdef OPENSSL_EXTRA
+#include <wolfssl/openssl/crypto.h>
+#endif
 
 #ifdef __cplusplus
     extern "C" {
@@ -243,8 +246,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 #define X509_digest wolfSSL_X509_digest
 #define X509_free wolfSSL_X509_free
 #define X509_new  wolfSSL_X509_new
-#define OPENSSL_free wolfSSL_OPENSSL_free
-#define OPENSSL_malloc wolfSSL_OPENSSL_malloc
 
 #define OCSP_parse_url wolfSSL_OCSP_parse_url
 #define SSLv23_client_method wolfSSLv23_client_method
@@ -284,9 +285,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 #define BIO_f_base64  wolfSSL_BIO_f_base64
 #define BIO_set_flags wolfSSL_BIO_set_flags
 
-#define OpenSSL_add_all_digests()  wolfCrypt_Init()
-#define OpenSSL_add_all_ciphers()  wolfCrypt_Init()
-#define OpenSSL_add_all_algorithms wolfSSL_add_all_algorithms
 #define SSLeay_add_ssl_algorithms  wolfSSL_add_all_algorithms
 #define SSLeay_add_all_algorithms  wolfSSL_add_all_algorithms
 
@@ -364,8 +362,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 #define X509_CRL_verify           wolfSSL_X509_CRL_verify
 #define X509_STORE_CTX_set_error  wolfSSL_X509_STORE_CTX_set_error
 #define X509_OBJECT_free_contents wolfSSL_X509_OBJECT_free_contents
-#define EVP_PKEY_new              wolfSSL_PKEY_new
-#define EVP_PKEY_free             wolfSSL_EVP_PKEY_free
 #define EVP_PKEY_type             wolfSSL_EVP_PKEY_type
 #define EVP_PKEY_base_id          wolfSSL_EVP_PKEY_base_id
 #define d2i_PUBKEY                wolfSSL_d2i_PUBKEY
@@ -441,7 +437,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 
 
 #define SSL_DEFAULT_CIPHER_LIST WOLFSSL_DEFAULT_CIPHER_LIST
-#define RSA_F4 WOLFSSL_RSA_F4
 
 #define SSL_CTX_set_psk_client_callback wolfSSL_CTX_set_psk_client_callback
 #define SSL_set_psk_client_callback wolfSSL_set_psk_client_callback
@@ -493,7 +488,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 
 #define ERR_free_strings wolfSSL_ERR_free_strings
 #define ERR_remove_state wolfSSL_ERR_remove_state
-#define EVP_cleanup wolfSSL_EVP_cleanup
 
 #define CRYPTO_cleanup_all_ex_data wolfSSL_cleanup_all_ex_data
 #define SSL_CTX_set_mode wolfSSL_CTX_set_mode
@@ -926,7 +920,6 @@ typedef WOLFSSL_ASN1_BIT_STRING    ASN1_BIT_STRING;
 #define SSL_CTX_add_client_CA             wolfSSL_CTX_add_client_CA
 #define SSL_CTX_set_srp_password          wolfSSL_CTX_set_srp_password
 #define SSL_CTX_set_srp_username          wolfSSL_CTX_set_srp_username
-#define OPENSSL_add_all_algorithms_noconf wolfSSL_OPENSSL_add_all_alogrithms_noconf
 
 #ifdef __cplusplus
     } /* extern "C" */
