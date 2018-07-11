@@ -69,9 +69,6 @@ typedef WOLFSSL_X509_CHAIN X509_CHAIN;
 /* redeclare guard */
 #define WOLFSSL_TYPES_DEFINED
 
-
-typedef WOLFSSL_EVP_PKEY       EVP_PKEY;
-typedef WOLFSSL_EVP_PKEY       PKCS8_PRIV_KEY_INFO;
 typedef WOLFSSL_BIO            BIO;
 typedef WOLFSSL_BIO_METHOD     BIO_METHOD;
 typedef WOLFSSL_CIPHER         SSL_CIPHER;
@@ -362,7 +359,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 #define X509_CRL_verify           wolfSSL_X509_CRL_verify
 #define X509_STORE_CTX_set_error  wolfSSL_X509_STORE_CTX_set_error
 #define X509_OBJECT_free_contents wolfSSL_X509_OBJECT_free_contents
-#define EVP_PKEY_base_id          wolfSSL_EVP_PKEY_base_id
 #define d2i_PUBKEY                wolfSSL_d2i_PUBKEY
 #define X509_cmp_current_time     wolfSSL_X509_cmp_current_time
 #define sk_X509_REVOKED_num       wolfSSL_sk_X509_REVOKED_num
