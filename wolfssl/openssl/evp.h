@@ -357,7 +357,9 @@ WOLFSSL_API int wolfSSL_EVP_PKEY_encrypt(WOLFSSL_EVP_PKEY_CTX *ctx,
                      const unsigned char *in, size_t inlen);
 WOLFSSL_API int wolfSSL_EVP_PKEY_encrypt_init(WOLFSSL_EVP_PKEY_CTX *ctx);
 WOLFSSL_API WOLFSSL_EVP_PKEY *wolfSSL_EVP_PKEY_new(void);
+WOLFSSL_API void wolfSSL_EVP_PKEY_free(WOLFSSL_EVP_PKEY*);
 WOLFSSL_API int wolfSSL_EVP_PKEY_size(WOLFSSL_EVP_PKEY *pkey);
+WOLFSSL_API int wolfSSL_EVP_PKEY_type(int type);
 WOLFSSL_API int wolfSSL_EVP_SignFinal(WOLFSSL_EVP_MD_CTX *ctx, unsigned char *sigret,
                   unsigned int *siglen, WOLFSSL_EVP_PKEY *pkey);
 WOLFSSL_API int wolfSSL_EVP_SignInit(WOLFSSL_EVP_MD_CTX *ctx, const WOLFSSL_EVP_MD *type);
@@ -540,6 +542,7 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define EVP_PKEY_new        wolfSSL_PKEY_new
 #define EVP_PKEY_free       wolfSSL_EVP_PKEY_free
 #define EVP_PKEY_size       wolfSSL_EVP_PKEY_size
+#define EVP_PKEY_type       wolfSSL_EVP_PKEY_type
 #define EVP_SignFinal       wolfSSL_EVP_SignFinal
 #define EVP_SignInit        wolfSSL_EVP_SignInit
 #define EVP_SignUpdate      wolfSSL_EVP_SignUpdate

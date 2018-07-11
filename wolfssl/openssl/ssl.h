@@ -362,7 +362,6 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
 #define X509_CRL_verify           wolfSSL_X509_CRL_verify
 #define X509_STORE_CTX_set_error  wolfSSL_X509_STORE_CTX_set_error
 #define X509_OBJECT_free_contents wolfSSL_X509_OBJECT_free_contents
-#define EVP_PKEY_type             wolfSSL_EVP_PKEY_type
 #define EVP_PKEY_base_id          wolfSSL_EVP_PKEY_base_id
 #define d2i_PUBKEY                wolfSSL_d2i_PUBKEY
 #define X509_cmp_current_time     wolfSSL_X509_cmp_current_time
