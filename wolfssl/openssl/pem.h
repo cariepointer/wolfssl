@@ -45,15 +45,26 @@ int wolfSSL_PEM_write_bio_RSAPrivateKey(WOLFSSL_BIO* bio, WOLFSSL_RSA* rsa,
                                         const EVP_CIPHER* cipher,
                                         unsigned char* passwd, int len,
                                         pem_password_cb* cb, void* arg);
+
 WOLFSSL_API
 WOLFSSL_RSA* wolfSSL_PEM_read_bio_RSAPrivateKey(WOLFSSL_BIO* bio,
                                                   WOLFSSL_RSA**,
                                                   pem_password_cb* cb,
                                                   void* arg);
+
+WOLFSSL_API
+int wolfSSL_PEM_write_bio_RSA_PUBKEY(WOLFSSL_BIO* bio, WOLFSSL_RSA* rsa);
+
+WOLFSSL_API
+WOLFSSL_RSA *wolfSSL_PEM_read_bio_RSA_PUBKEY(WOLFSSL_BIO* bio,
+                                             WOLFSSL_RSA** rsa,
+                                             pem_password_cb* cb, void *u);
+
 WOLFSSL_API
 int wolfSSL_PEM_write_mem_RSAPrivateKey(RSA* rsa, const EVP_CIPHER* cipher,
                                         unsigned char* passwd, int len,
                                         unsigned char **pem, int *plen);
+
 #if !defined(NO_FILESYSTEM)
 WOLFSSL_API
 int wolfSSL_PEM_write_RSAPrivateKey(XFILE fp, WOLFSSL_RSA *rsa,
@@ -77,11 +88,25 @@ int wolfSSL_PEM_write_bio_DSAPrivateKey(WOLFSSL_BIO* bio,
                                         const EVP_CIPHER* cipher,
                                         unsigned char* passwd, int len,
                                         pem_password_cb* cb, void* arg);
+
+WOLFSSL_API
+WOLFSSL_DSA* wolfSSL_PEM_read_bio_DSAPrivateKey(WOLFSSL_BIO* bio,
+                                                WOLFSSL_DSA** dsa,
+                                                pem_password_cb* cb, void *u);
 WOLFSSL_API
 int wolfSSL_PEM_write_mem_DSAPrivateKey(WOLFSSL_DSA* dsa,
                                         const EVP_CIPHER* cipher,
                                         unsigned char* passwd, int len,
                                         unsigned char **pem, int *plen);
+
+WOLFSSL_API
+int wolfSSL_PEM_write_bio_DSA_PUBKEY(WOLFSSL_BIO* bio, WOLFSSL_DSA* dsa);
+
+WOLFSSL_API
+WOLFSSL_DSA *wolfSSL_PEM_read_bio_DSA_PUBKEY(WOLFSSL_BIO* bio,
+                                             WOLFSSL_DSA** dsa,
+                                             pem_password_cb* cb, void *u);
+
 #if !defined(NO_FILESYSTEM)
 WOLFSSL_API
 int wolfSSL_PEM_write_DSAPrivateKey(XFILE fp, WOLFSSL_DSA *dsa,
@@ -99,6 +124,10 @@ int wolfSSL_PEM_write_bio_ECPrivateKey(WOLFSSL_BIO* bio, WOLFSSL_EC_KEY* ec,
                                        unsigned char* passwd, int len,
                                        pem_password_cb* cb, void* arg);
 WOLFSSL_API
+WOLFSSL_EC_KEY* wolfSSL_PEM_read_bio_ECPrivateKey(WOLFSSL_BIO* bio,
+                                                  WOLFSSL_EC_KEY** ec,
+                                                  pem_password_cb* cb,void *u);
+WOLFSSL_API
 int wolfSSL_PEM_write_mem_ECPrivateKey(WOLFSSL_EC_KEY* key,
                                        const EVP_CIPHER* cipher,
                                        unsigned char* passwd, int len,
@@ -109,6 +138,13 @@ int wolfSSL_PEM_write_ECPrivateKey(XFILE fp, WOLFSSL_EC_KEY *key,
                                    const EVP_CIPHER *enc,
                                    unsigned char *kstr, int klen,
                                    pem_password_cb *cb, void *u);
+WOLFSSL_API
+WOLFSSL_EC_KEY* wolfSSL_PEM_read_bio_EC_PUBKEY(WOLFSSL_BIO* bio,
+                                              WOLFSSL_EC_KEY** ec,
+                                              pem_password_cb* cb, void *u);
+WOLFSSL_API
+int wolfSSL_PEM_write_bio_EC_PUBKEY(WOLFSSL_BIO* bio,
+                                    WOLFSSL_EC_KEY* ec);
 WOLFSSL_API
 int wolfSSL_PEM_write_EC_PUBKEY(XFILE fp, WOLFSSL_EC_KEY *key);
 #endif /* NO_FILESYSTEM */
@@ -128,6 +164,8 @@ int wolfSSL_PEM_write_bio_PrivateKey(WOLFSSL_BIO* bio, WOLFSSL_EVP_PKEY* key,
                                         const WOLFSSL_EVP_CIPHER* cipher,
                                         unsigned char* passwd, int len,
                                         pem_password_cb* cb, void* arg);
+WOLFSSL_API
+int wolfSSL_PEM_write_bio_PUBKEY(WOLFSSL_BIO* bio, WOLFSSL_EVP_PKEY* key);
 
 
 WOLFSSL_API
@@ -177,24 +215,35 @@ int wolfSSL_PEM_write_DHparams(XFILE fp, WOLFSSL_DH* dh);
 /* DH */
 #define PEM_write_DHparams              wolfSSL_PEM_write_DHparams
 /* RSA */
-#define PEM_write_bio_RSAPrivateKey     wolfSSL_PEM_write_bio_RSAPrivateKey
-#define PEM_read_bio_RSAPrivateKey      wolfSSL_PEM_read_bio_RSAPrivateKey
-#define PEM_write_RSAPrivateKey         wolfSSL_PEM_write_RSAPrivateKey
-#define PEM_write_RSA_PUBKEY            wolfSSL_PEM_write_RSA_PUBKEY
-#define PEM_write_RSAPublicKey          wolfSSL_PEM_write_RSAPublicKey
-#define PEM_read_RSAPublicKey           wolfSSL_PEM_read_RSAPublicKey
+#define PEM_write_bio_RSAPrivateKey wolfSSL_PEM_write_bio_RSAPrivateKey
+#define PEM_read_bio_RSAPrivateKey  wolfSSL_PEM_read_bio_RSAPrivateKey
+#define PEM_write_bio_RSA_PUBKEY    wolfSSL_PEM_write_bio_RSA_PUBKEY
+#define PEM_read_bio_RSA_PUBKEY     wolfSSL_PEM_read_bio_RSA_PUBKEY
+#define PEM_write_RSAPrivateKey     wolfSSL_PEM_write_RSAPrivateKey
+#define PEM_write_RSA_PUBKEY        wolfSSL_PEM_write_RSA_PUBKEY
+#define PEM_write_RSAPublicKey      wolfSSL_PEM_write_RSAPublicKey
+#define PEM_read_RSAPublicKey       wolfSSL_PEM_read_RSAPublicKey
+
 /* DSA */
-#define PEM_write_bio_DSAPrivateKey     wolfSSL_PEM_write_bio_DSAPrivateKey
-#define PEM_write_DSAPrivateKey         wolfSSL_PEM_write_DSAPrivateKey
-#define PEM_write_DSA_PUBKEY            wolfSSL_PEM_write_DSA_PUBKEY
+#define PEM_write_bio_DSAPrivateKey wolfSSL_PEM_write_bio_DSAPrivateKey
+#define PEM_read_bio_DSAPrivateKey  wolfSSL_PEM_read_bio_DSAPrivateKey
+#define PEM_write_bio_DSA_PUBKEY    wolfSSL_PEM_write_bio_DSA_PUBKEY
+#define PEM_read_bio_DSA_PUBKEY     wolfSSL_PEM_read_bio_DSA_PUBKEY
+#define PEM_write_DSAPrivateKey     wolfSSL_PEM_write_DSAPrivateKey
+#define PEM_write_DSA_PUBKEY        wolfSSL_PEM_write_DSA_PUBKEY
+
 /* ECC */
-#define PEM_write_bio_ECPrivateKey      wolfSSL_PEM_write_bio_ECPrivateKey
-#define PEM_write_EC_PUBKEY             wolfSSL_PEM_write_EC_PUBKEY
-#define PEM_write_ECPrivateKey          wolfSSL_PEM_write_ECPrivateKey
+#define PEM_write_bio_ECPrivateKey wolfSSL_PEM_write_bio_ECPrivateKey
+#define PEM_read_bio_EC_PUBKEY     wolfSSL_PEM_read_bio_EC_PUBKEY
+#define PEM_write_bio_EC_PUBKEY    wolfSSL_PEM_write_bio_EC_PUBKEY
+#define PEM_write_EC_PUBKEY        wolfSSL_PEM_write_EC_PUBKEY
+#define PEM_read_bio_ECPrivateKey  wolfSSL_PEM_read_bio_ECPrivateKey
+#define PEM_write_ECPrivateKey     wolfSSL_PEM_write_ECPrivateKey
 /* EVP_KEY */
 #define PEM_read_bio_PrivateKey         wolfSSL_PEM_read_bio_PrivateKey
 #define PEM_read_PUBKEY                 wolfSSL_PEM_read_PUBKEY
 #define PEM_read_bio_PUBKEY             wolfSSL_PEM_read_bio_PUBKEY
+#define PEM_write_bio_PUBKEY            wolfSSL_PEM_write_bio_PUBKEY
 
 #ifdef __cplusplus
     }  /* extern "C" */ 

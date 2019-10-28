@@ -182,12 +182,14 @@ then
     enable_stunnel=yes
     enable_nginx=yes
     enable_asio=yes
+    enable_qt=yes
     enable_pwdbased=yes
     enable_aeskeywrap=yes
     enable_x963kdf=yes
     enable_scrypt=yes
     enable_indef=yes
     enable_enckeys=yes
+    enable_dhdefaultparams=yes
 
     # Enable AES Decrypt, AES ECB, Alt Names, DER Load, Keep Certs, CRL IO with Timeout
     AM_CFLAGS="$AM_CFLAGS -DHAVE_AES_DECRYPT -DHAVE_AES_ECB -DWOLFSSL_ALT_NAMES -DWOLFSSL_DER_LOAD -DKEEP_OUR_CERT -DKEEP_PEER_CERT -DHAVE_CRL_IO -DHAVE_IO_TIMEOUT"
@@ -432,6 +434,8 @@ AC_ARG_ENABLE([mcast],
 # lighty (--enable-lighty) HAVE_LIGHTY
 # stunnel (--enable-stunnel) HAVE_STUNNEL
 # asio (--enable-asio) WOLFSSL_ASIO
+# qt (--enable-qt) WOLFSSL_QT
+# qt test (--enable-qt-test) WOLFSSL_QT_TEST
 # HAVE_POCO_LIB
 # WOLFSSL_MYSQL_COMPATIBLE
 # web server (--enable-webserver) HAVE_WEBSERVER
@@ -475,6 +479,13 @@ if test "$ENABLED_OPENSSH" = "yes"
 then
     ENABLED_FORTRESS="yes"
 fi
+
+#Qt Support
+AC_ARG_ENABLE([qt],
+    [AS_HELP_STRING([--enable-qt],[Enable qt (default: disabled)])],
+    [ ENABLED_QT=$enableval ],
+    [ ENABLED_QT=no ]
+    )
 
 # ssl bump build
 AC_ARG_ENABLE([bump],
@@ -1385,7 +1396,6 @@ then
   AM_CFLAGS="$AM_CFLAGS -DHAVE_HKDF"
 fi
 
-
 # X9.63 KDF
 AC_ARG_ENABLE([x963kdf],
     [AS_HELP_STRING([--enable-x963kdf],[Enable X9.63 KDF support (default: disabled)])],
@@ -1397,7 +1407,6 @@ then
   AM_CFLAGS="$AM_CFLAGS -DHAVE_X963_KDF"
 fi
 
-
 # DSA
 AC_ARG_ENABLE([dsa],
     [AS_HELP_STRING([--enable-dsa],[Enable DSA (default: disabled)])],
@@ -1405,7 +1414,7 @@ AC_ARG_ENABLE([dsa],
     [ ENABLED_DSA=no ]
     )
 
-if test "$ENABLED_OPENSSH" = "yes" || test "$ENABLED_NGINX" = "yes" || test "$ENABLED_WPAS" = "yes"
+if test "$ENABLED_OPENSSH" = "yes" || test "$ENABLED_NGINX" = "yes" || test "$ENABLED_WPAS" = "yes" || test "$ENABLED_QT" = "yes"
 then
     ENABLED_DSA="yes"
 fi
@@ -1414,7 +1423,6 @@ if test "$ENABLED_DSA" = "no"
 then
     AM_CFLAGS="$AM_CFLAGS -DNO_DSA"
 fi
-
 
 # ECC Shamir
 AC_ARG_ENABLE([eccshamir],
@@ -1789,7 +1797,66 @@ then
     AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_STACK_LOG -finstrument-functions"
 fi
 
+if test "$ENABLED_QT" = "yes"
+then
+    # Requires opensslextra and opensslall
+    if test "x$ENABLED_OPENSSLALL" = "xno" && test "x$ENABLED_OPENSSLCOEXIST" = "xno"
+    then
+        ENABLED_OPENSSLALL="yes"
+        ENABLED_OPENSSLEXTRA="yes"
+        AM_CFLAGS="$AM_CFLAGS -DOPENSSL_EXTRA -DOPENSSL_ALL -DHAVE_EX_DATA"
+    fi
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_QT -DWOLFSSL_ALLOW_TLSV10 -DSESSION_CERTS -DOPENSSL_NO_SSL2"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_ALLOW_SSLV3 -DWOLFSSL_KEY_GEN -DHAVE_EX_DATA"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CUSTOM_CURVES -DHAVE_ECC_SECPR2 -DHAVE_ECC_SECPR3 -DHAVE_ECC_BRAINPOOL -DHAVE_ECC_KOBLITZ"
 
+    # Requires OCSP make sure on
+    if test "x$ENABLED_OCSP" = "xno"
+    then
+        ENABLED_OCSP="yes"
+        AM_CFLAGS="$AM_CFLAGS -DHAVE_OCSP"
+        AM_CONDITIONAL([BUILD_OCSP], [test "x$ENABLED_OCSP" = "xyes"])
+    fi
+
+    # Requires PSK make sure on
+    if test "x$ENABLED_PSK" = "xno"
+    then
+       ENABLED_PSK="yes"
+    fi
+
+    # Requires RC4 make sure on
+    if test "x$ENABLED_ARC4" = "xno"
+    then
+       ENABLED_ARC4="yes"
+    fi
+
+    if test "x$ENABLED_CERTEXT" = "xno"
+    then
+        ENABLED_CERTEXT="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CERT_EXT"
+    fi
+
+    if test "x$ENABLED_CERTGEN" = "xno"
+    then
+        ENABLED_CERTGEN="yes"
+        AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_CERT_GEN"
+    fi
+
+    # requires oldnames disabled
+    enable_oldnames=no
+fi
+
+AC_ARG_ENABLE([qt-test],
+    [AS_HELP_STRING([--enable-qt-test],[Enable qt tests (default: disabled)])],
+    [ ENABLED_QT_TEST=$enableval ],
+    [ ENABLED_QT_TEST=no ]
+    )
+
+if test "$ENABLED_QT_TEST" = "yes"
+then
+    AM_CFLAGS="$AM_CFLAGS -DOPENSSL_NO_SSL3 -DWOLFSSL_STATIC_RSA"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_STATIC_PSK"
+fi
 
 # RSA
 AC_ARG_ENABLE([rsa],
@@ -2067,7 +2134,7 @@ AC_ARG_ENABLE([des3],
     [ ENABLED_DES3=no ]
     )
 
-if test "$ENABLED_OPENSSH" = "yes"
+if test "$ENABLED_OPENSSH" = "yes" || test "$ENABLED_QT" = "yes"
 then
     ENABLED_DES3="yes"
 fi
@@ -2083,7 +2150,6 @@ if test "x$ENABLED_IDEA" = "xyes"
 then
     AM_CFLAGS="$AM_CFLAGS -DHAVE_IDEA"
 fi
-
 
 # ARC4
 AC_ARG_ENABLE([arc4],
@@ -2108,6 +2174,7 @@ else
         ENABLED_ARC4=no
     fi
 fi
+AM_CONDITIONAL([BUILD_IDEA], [test "x$ENABLED_IDEA" = "xyes"])
 
 
 # MD5
@@ -2766,6 +2833,10 @@ AC_ARG_ENABLE([sni],
     [ ENABLED_SNI=$enableval ],
     [ ENABLED_SNI=no ]
     )
+if test "x$ENABLED_QT" = "xyes"
+then
+    ENABLED_SNI="yes"
+fi
 
 if test "x$ENABLED_SNI" = "xyes"
 then
@@ -3288,6 +3359,34 @@ then
     AM_CFLAGS="$AM_CFLAGS -DKEEP_OUR_CERT -DKEEP_PEER_CERT"
     AM_CFLAGS="$AM_CFLAGS -DHAVE_EXT_CACHE -DHAVE_EX_DATA"
 fi
+
+
+
+# ARC4
+AC_ARG_ENABLE([arc4],
+    [AS_HELP_STRING([--enable-arc4],[Enable ARC4 (default: disabled)])],
+    [ ENABLED_ARC4=$enableval ],
+    [ ENABLED_ARC4=no ]
+    )
+
+if test "$ENABLED_OPENSSH" = "yes" || test "$ENABLED_WPAS" = "yes" || test "$ENABLED_QT" = "yes"
+then
+    ENABLED_ARC4="yes"
+fi
+
+if test "$ENABLED_ARC4" = "no"
+then
+    AM_CFLAGS="$AM_CFLAGS -DNO_RC4"
+else
+    # turn off ARC4 if leanpsk or leantls on
+    if test "$ENABLED_LEANPSK" = "yes" || test "$ENABLED_LEANTLS" = "yes"
+    then
+        AM_CFLAGS="$AM_CFLAGS -DNO_RC4"
+        ENABLED_ARC4=no
+    fi
+fi
+
+AM_CONDITIONAL([BUILD_RC4], [test "x$ENABLED_ARC4" = "xyes"])
 
 # Asio Support
 AC_ARG_ENABLE([asio],
@@ -4338,6 +4437,17 @@ then
     AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_TRACK_MEMORY -DWOLFSSL_DEBUG_MEMORY -DWOLFSSL_FORCE_MALLOC_FAIL_TEST"
 fi
 
+# Support for enabling setting default DH parameters in
+AC_ARG_ENABLE([defaultdhparams],
+    [AS_HELP_STRING([--enable-dhdefaultparams],[Enables option for default dh parameters (default: disabled)])],
+    [ ENABLED_DHDEFAULTPARAMS=$enableval ],
+    [ ENABLED_DHDEFAULTPARAMS=no ]
+    )
+if test "$ENABLED_DHDEFAULTPARAMS" = "yes" || test "$ENABLED_QT" = "no"
+then
+    ENABLED_DHDEFAULTPARAMS=yes
+    AM_CFLAGS="$AM_CFLAGS -DHAVE_DH_DEFAULT_PARAMS"
+fi
 
 # User Settings
 AC_ARG_ENABLE([usersettings],
@@ -4931,6 +5041,7 @@ echo "   * RSA:                        $ENABLED_RSA"
 echo "   * RSA-PSS:                    $ENABLED_RSAPSS"
 echo "   * DSA:                        $ENABLED_DSA"
 echo "   * DH:                         $ENABLED_DH"
+echo "   * DH Default Parameters:      $ENABLED_DHDEFAULTPARAMS"
 echo "   * ECC:                        $ENABLED_ECC"
 echo "   * ECC Custom Curves           $ENABLED_ECCCUSTCURVES"
 echo "   * CURVE25519:                 $ENABLED_CURVE25519"
@@ -4947,6 +5058,8 @@ echo "   * HAPROXY:                    $ENABLED_HAPROXY"
 echo "   * STUNNEL:                    $ENABLED_STUNNEL"
 echo "   * NGINX:                      $ENABLED_NGINX"
 echo "   * ASIO:                       $ENABLED_ASIO"
+echo "   * Qt                          $ENABLED_QT"
+echo "   * Qt Unit Testing             $ENABLED_QT_TEST"
 echo "   * SIGNAL:                     $ENABLED_SIGNAL"
 echo "   * ERROR_STRINGS:              $ENABLED_ERROR_STRINGS"
 echo "   * DTLS:                       $ENABLED_DTLS"
