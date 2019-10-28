@@ -46,8 +46,12 @@ WOLFSSL_API void *wolfSSL_OPENSSL_malloc(size_t a);
 #define SSLeay_version wolfSSLeay_version
 #define SSLeay wolfSSLeay
 
+#ifdef WOLFSSL_QT
+    #define SSLEAY_VERSION 0x10001000L
+#else
+    #define SSLEAY_VERSION 0x0090600fL
+#endif
 
-#define SSLEAY_VERSION 0x0090600fL
 #define SSLEAY_VERSION_NUMBER SSLEAY_VERSION
 #define CRYPTO_lock wc_LockMutex_ex
 
@@ -56,6 +60,12 @@ WOLFSSL_API void *wolfSSL_OPENSSL_malloc(size_t a);
 
 #define OPENSSL_free wolfSSL_OPENSSL_free
 #define OPENSSL_malloc wolfSSL_OPENSSL_malloc
+
+#ifdef WOLFSSL_QT
+    #define OPENSSL_INIT_ADD_ALL_CIPHERS    0x00000004L
+    #define OPENSSL_INIT_ADD_ALL_DIGESTS    0x00000008L
+    #define OPENSSL_INIT_LOAD_CONFIG        0x00000040L
+#endif
 
 #if defined(OPENSSL_ALL) || defined(HAVE_STUNNEL) || defined(WOLFSSL_NGINX) || \
     defined(WOLFSSL_HAPROXY) || defined(OPENSSL_EXTRA)

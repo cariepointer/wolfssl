@@ -1,4 +1,4 @@
-/* conf.h
+/* x509_vfy.h
  *
  * Copyright (C) 2006-2017 wolfSSL Inc.
  *
@@ -19,27 +19,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335, USA
  */
 
-/* conf.h for openSSL */
+/* x509_vfy.h for openSSL */
 
-#ifndef WOLFSSL_conf_H_
-#define WOLFSSL_conf_H_
+#ifndef WOLFSSL_x509_vfy_H_
+#define WOLFSSL_x509_vfy_H_
+
+#include <wolfssl/openssl/x509v3.h>
 
 #ifdef __cplusplus
     extern "C" {
 #endif
 
-struct WOLFSSL_CONF_VALUE {
-    char *section;
-    char *name;
-    char *value;
-};
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    WOLFSSL_API int wolfSSL_X509_STORE_CTX_set_purpose(WOLFSSL_X509_STORE_CTX *ctx, int purpose);
+#endif
 
-struct WOLFSSL_INIT_SETTINGS {
-    char* appname;
-};
-
-typedef struct WOLFSSL_CONF_VALUE CONF_VALUE;
-typedef struct WOLFSSL_INIT_SETTINGS OPENSSL_INIT_SETTINGS;
+#ifdef WOLFSSL_QT
+    #define X509_STORE_CTX_set_purpose  wolfSSL_X509_STORE_CTX_set_purpose
+#endif
 
 #ifdef  __cplusplus
 } /* extern "C" */
