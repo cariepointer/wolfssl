@@ -287,12 +287,7 @@ typedef WOLFSSL_X509_STORE_CTX X509_STORE_CTX;
     #define SSL_MODE_RELEASE_BUFFERS    wolfSSL_SSL_MODE_RELEASE_BUFFERS
     #define SSL_CTRL_SET_TMP_ECDH       wolfSSL_SSL_CTRL_SET_TMP_ECDH
     #define ASN1_BOOLEAN                WOLFSSL_ASN1_BOOLEAN
-    #define X509_cmp                    wolfSSL_X509_cmp
-    #define X509_get_ext                wolfSSL_X509_get_ext
-    #define X509_get_ext_count          wolfSSL_X509_get_ext_count
     #define X509_PUBKEY_get             wolfSSL_X509_PUBKEY_get
-    #define X509_EXTENSION_get_object   wolfSSL_X509_EXTENSION_get_object
-    #define X509_EXTENSION_get_critical wolfSSL_X509_EXTENSION_get_critical
     #define X509_EXTENSION_get_data     wolfSSL_X509_EXTENSION_get_data
     #define X509_EXTENSION_new          wolfSSL_X509_EXTENSION_new
     #define X509_EXTENSION_free         wolfSSL_X509_EXTENSION_free
@@ -529,7 +524,6 @@ typedef WOLFSSL_ASN1_BIT_STRING         ASN1_BIT_STRING;
 #define ASN1_STRING_length              wolfSSL_ASN1_STRING_length
 #define ASN1_STRING_to_UTF8             wolfSSL_ASN1_STRING_to_UTF8
 #define ASN1_STRING_print_ex            wolfSSL_ASN1_STRING_print_ex
-#define ASN1_STRING_print(x, y)         wolfSSL_ASN1_STRING_print ((WOLFSSL_BIO*)(x), (WOLFSSL_ASN1_STRING*)(y))
 
 #define ASN1_UTCTIME_pr                 wolfSSL_ASN1_UTCTIME_pr
 
@@ -755,7 +749,6 @@ typedef STACK_OF(ACCESS_DESCRIPTION) AUTHORITY_INFO_ACCESS;
 #define d2i_PrivateKey_bio              wolfSSL_d2i_PrivateKey_bio
 #define BIO_new_bio_pair                wolfSSL_BIO_new_bio_pair
 #define SSL_get_verify_callback         wolfSSL_get_verify_callback
-#define GENERAL_NAMES_free(GENERAL_NAMES) wolfSSL_GENERAL_NAMES_free
 
 #define SSL_set_mode(ssl,op)         wolfSSL_ctrl((ssl),SSL_CTRL_MODE,(op),NULL)
 
@@ -899,7 +892,6 @@ typedef STACK_OF(ACCESS_DESCRIPTION) AUTHORITY_INFO_ACCESS;
 #define SSL_SESSION_get_id              wolfSSL_SESSION_get_id
 #define sk_GENERAL_NAME_pop_free        wolfSSL_sk_GENERAL_NAME_pop_free
 #define GENERAL_NAME_new                wolfSSL_GENERAL_NAME_new
-#define GENERAL_NAME_free               wolfSSL_GENERAL_NAME_free
 
 #define SSL3_AL_FATAL                   2
 #define SSL_TLSEXT_ERR_OK               0

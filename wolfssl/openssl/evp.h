@@ -305,8 +305,6 @@ WOLFSSL_API int wolfSSL_EVP_BytesToKey(const WOLFSSL_EVP_CIPHER*,
 
 WOLFSSL_API void wolfSSL_EVP_CIPHER_CTX_init(WOLFSSL_EVP_CIPHER_CTX* ctx);
 WOLFSSL_API int  wolfSSL_EVP_CIPHER_CTX_cleanup(WOLFSSL_EVP_CIPHER_CTX* ctx);
-WOLFSSL_API int  wolfSSL_EVP_CIPHER_CTX_ctrl(WOLFSSL_EVP_CIPHER_CTX *ctx, \
-                                             int type, int arg, void *ptr);
 
 WOLFSSL_API int  wolfSSL_EVP_CIPHER_CTX_iv_length(const WOLFSSL_EVP_CIPHER_CTX*);
 WOLFSSL_API int  wolfSSL_EVP_CIPHER_iv_length(const WOLFSSL_EVP_CIPHER*);
@@ -618,7 +616,6 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define EVP_VerifyInit                 wolfSSL_EVP_VerifyInit
 #define EVP_VerifyUpdate               wolfSSL_EVP_VerifyUpdate
 
-#define EVP_CIPHER_CTX_ctrl            wolfSSL_EVP_CIPHER_CTX_ctrl
 #define EVP_CIPHER_CTX_block_size      wolfSSL_EVP_CIPHER_CTX_block_size
 #define EVP_CIPHER_block_size          wolfSSL_EVP_CIPHER_block_size
 #define EVP_CIPHER_flags               wolfSSL_EVP_CIPHER_flags

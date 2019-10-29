@@ -75,9 +75,6 @@ typedef WOLF_STACK_OF(WOLFSSL_ACCESS_DESCRIPTION) WOLFSSL_AUTHORITY_INFO_ACCESS;
 
 WOLFSSL_API void wolfSSL_BASIC_CONSTRAINTS_free(WOLFSSL_BASIC_CONSTRAINTS *bc);
 WOLFSSL_API void wolfSSL_AUTHORITY_KEYID_free(WOLFSSL_AUTHORITY_KEYID *id);
-WOLFSSL_API const WOLFSSL_v3_ext_method* wolfSSL_X509V3_EXT_get(
-                                                    WOLFSSL_X509_EXTENSION* ex);
-WOLFSSL_API void* wolfSSL_X509V3_EXT_d2i(WOLFSSL_X509_EXTENSION* ex);
 WOLFSSL_API char* wolfSSL_i2s_ASN1_STRING(WOLFSSL_v3_ext_method *method,
                                           const WOLFSSL_ASN1_STRING *s);
 
@@ -86,8 +83,6 @@ WOLFSSL_API char* wolfSSL_i2s_ASN1_STRING(WOLFSSL_v3_ext_method *method,
 #define SSL_CTX_get_cert_store(x) wolfSSL_CTX_get_cert_store ((WOLFSSL_CTX*) (x))
 #define ASN1_INTEGER              WOLFSSL_ASN1_INTEGER
 #define ASN1_OCTET_STRING         WOLFSSL_ASN1_STRING
-#define X509V3_EXT_get            wolfSSL_X509V3_EXT_get
-#define X509V3_EXT_d2i            wolfSSL_X509V3_EXT_d2i
 #define i2s_ASN1_OCTET_STRING     wolfSSL_i2s_ASN1_STRING
 #ifdef  __cplusplus
 }
