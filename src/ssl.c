@@ -18032,7 +18032,13 @@ char* wolfSSL_X509_get_name_oneline(WOLFSSL_X509_NAME* name, char* in, int sz)
 WOLFSSL_X509* wolfSSL_d2i_X509(WOLFSSL_X509** x509, const unsigned char** in,
         int len)
 {
-    return wolfSSL_X509_d2i(x509, *in, len);
+    WOLFSSL_X509* newX509 = NULL;
+
+    newX509 = wolfSSL_X509_d2i(x509, *in, len);
+    if (newX509 != NULL) {
+        *in += len;
+    }
+    return newX509;
 }
 
 
@@ -18058,10 +18064,8 @@ WOLFSSL_X509* wolfSSL_X509_d2i(WOLFSSL_X509** x509, const byte* in, int len)
 
         InitDecodedCert(cert, (byte*)in, len, NULL);
         if (ParseCertRelative(cert, CERT_TYPE, 0, NULL) == 0) {
-            newX509 = (WOLFSSL_X509*)XMALLOC(sizeof(WOLFSSL_X509), NULL,
-                                             DYNAMIC_TYPE_X509);
+            newX509 = wolfSSL_X509_new();
             if (newX509 != NULL) {
-                InitX509(newX509, 1, NULL);
                 if (CopyDecodedToX509(newX509, cert) != 0) {
                     wolfSSL_X509_free(newX509);
                     newX509 = NULL;
@@ -18285,6 +18289,15 @@ WOLFSSL_X509* wolfSSL_X509_d2i(WOLFSSL_X509** x509, const byte* in, int len)
         return notAfterData;
     }
 
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL) && !defined(NO_WOLFSSL_STUB)
+    WOLFSSL_ASN1_TIME* wolfSSL_X509_gmtime_adj(WOLFSSL_ASN1_TIME *s, long adj)
+    {
+        (void) s;
+        (void) adj;
+        WOLFSSL_STUB("wolfSSL_X509_gmtime_adj");
+        return NULL;
+    }
+    #endif
 
     /* get the buffer to be signed (tbs) from the WOLFSSL_X509 certificate
      *
