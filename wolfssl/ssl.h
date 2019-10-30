@@ -480,6 +480,9 @@ struct WOLFSSL_BIO {
 #endif
 };
 
+typedef struct WOLFSSL_CRYPTO_EX_DATA {
+    WOLFSSL_STACK* data;
+} WOLFSSL_CRYPTO_EX_DATA;
 
 typedef struct WOLFSSL_COMP_METHOD {
     int type;            /* stunnel dereference */
@@ -509,6 +512,7 @@ struct WOLFSSL_X509_STORE {
 #endif
 #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
     WOLFSSL_X509_STORE_CTX_verify_cb verify_cb;
+    WOLFSSL_CRYPTO_EX_DATA ex_data;
 #endif
 #if defined(OPENSSL_EXTRA) && defined(HAVE_CRL)
     WOLFSSL_X509_CRL *crl;
@@ -910,10 +914,6 @@ WOLFSSL_API
 typedef int (*VerifyCallback)(int, WOLFSSL_X509_STORE_CTX*);
 #ifdef OPENSSL_EXTRA
 typedef void (CallbackInfoState)(const WOLFSSL*, int, int);
-
-typedef struct WOLFSSL_CRYPTO_EX_DATA {
-    WOLFSSL_STACK* data;
-} WOLFSSL_CRYPTO_EX_DATA;
 
 typedef int  (WOLFSSL_CRYPTO_EX_new)(void* p, void* ptr,
         WOLFSSL_CRYPTO_EX_DATA* a, int idx, long argValue, void* arg);
