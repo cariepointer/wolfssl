@@ -490,6 +490,7 @@ WOLFSSL_API int  wolfSSL_EVP_add_digest(const WOLFSSL_EVP_MD *digest);
 WOLFSSL_API int  wolfSSL_EVP_add_cipher(const WOLFSSL_EVP_CIPHER *cipher);
 WOLFSSL_API void wolfSSL_EVP_cleanup(void);
 WOLFSSL_API int  wolfSSL_add_all_algorithms(void);
+WOLFSSL_API int  wolfSSL_OpenSSL_add_all_algorithms_conf(void);
 WOLFSSL_API int  wolfSSL_OpenSSL_add_all_algorithms_noconf(void);
 WOLFSSL_API int wolfSSL_EVP_read_pw_string(char*, int, const char*, int);
 
@@ -693,7 +694,10 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define OpenSSL_add_all_ciphers()  wolfSSL_EVP_init()
 #define OpenSSL_add_all_algorithms wolfSSL_add_all_algorithms
 #define OpenSSL_add_all_algorithms_noconf wolfSSL_OpenSSL_add_all_algorithms_noconf
+#define OpenSSL_add_all_algorithms_conf   wolfSSL_OpenSSL_add_all_algorithms_conf
+
 #define wolfSSL_OPENSSL_add_all_algorithms_noconf wolfSSL_OpenSSL_add_all_algorithms_noconf
+#define wolfSSL_OPENSSL_add_all_algorithms_conf   wolfSSL_OpenSSL_add_all_algorithms_conf
 
 #define NO_PADDING_BLOCK_SIZE      1
 
