@@ -23061,8 +23061,11 @@ WOLFSSL_X509_STORE_CTX* wolfSSL_X509_STORE_CTX_new(void)
 int wolfSSL_X509_STORE_CTX_init(WOLFSSL_X509_STORE_CTX* ctx,
      WOLFSSL_X509_STORE* store, WOLFSSL_X509* x509, WOLF_STACK_OF(WOLFSSL_X509)* sk)
 {
+    WOLFSSL_X509* x509_cert;
+    int ret = 0;
     (void)sk;
     WOLFSSL_ENTER("wolfSSL_X509_STORE_CTX_init");
+
     if (ctx != NULL) {
         ctx->store = store;
         #ifndef WOLFSSL_X509_STORE_CERTS
@@ -23077,6 +23080,19 @@ int wolfSSL_X509_STORE_CTX_init(WOLFSSL_X509_STORE_CTX* ctx,
         #endif
 
         ctx->chain  = sk;
+        /* Add intermediate certificates from stack to store */
+        while (sk != NULL) {
+            x509_cert = sk->data.x509;
+            if (x509_cert != NULL && x509_cert->isCa) {
+                ret = wolfSSL_X509_STORE_add_cert(store, x509_cert);
+                if (ret < 0) {
+                    return WOLFSSL_FATAL_ERROR;
+                }
+            }
+            sk = sk->next;
+        }
+
+        ctx->sesChain = NULL;
         ctx->domain = NULL;
 #if defined(HAVE_EX_DATA) || defined(FORTRESS)
         XMEMSET(ctx->ex_data, 0, MAX_EX_DATA * sizeof(void*));
@@ -23104,13 +23120,16 @@ int wolfSSL_X509_STORE_CTX_init(WOLFSSL_X509_STORE_CTX* ctx,
 
 void wolfSSL_X509_STORE_CTX_free(WOLFSSL_X509_STORE_CTX* ctx)
 {
+    WOLFSSL_ENTER("X509_STORE_CTX_free");
     if (ctx != NULL) {
+    #if !defined(OPENSSL_ALL) && !defined(WOLFSSL_QT)
         if (ctx->store != NULL)
             wolfSSL_X509_STORE_free(ctx->store);
         #ifndef WOLFSSL_KEEP_STORE_CERTS
         if (ctx->current_cert != NULL)
             wolfSSL_FreeX509(ctx->current_cert);
         #endif
+    #endif /* !OPENSSL_ALL && !WOLFSSL_QT */
 #ifdef OPENSSL_EXTRA
         if (ctx->param != NULL){
             XFREE(ctx->param,NULL,DYNAMIC_TYPE_OPENSSL);
