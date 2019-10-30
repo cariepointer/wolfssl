@@ -3117,6 +3117,7 @@ WOLFSSL_API int wolfSSL_OBJ_create(const char *oid, const char *sn, const char *
 WOLFSSL_API unsigned long wolfSSL_ERR_peek_last_error_line(const char **file, int *line);
 WOLFSSL_API long wolfSSL_ctrl(WOLFSSL* ssl, int cmd, long opt, void* pt);
 WOLFSSL_API long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt,void* pt);
+WOLFSSL_API long wolfSSL_CTX_callback_ctrl(WOLFSSL_CTX* ctx, int cmd, void (*fp)(void));
 WOLFSSL_API long wolfSSL_CTX_clear_extra_chain_certs(WOLFSSL_CTX* ctx);
 
 #ifndef NO_CERTS
