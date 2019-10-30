@@ -299,6 +299,7 @@ typedef WOLFSSL_X509_VERIFY_PARAM X509_VERIFY_PARAM;
 #define SSL_SESSION_get_master_key_length wolfSSL_SESSION_get_master_key_length
 
 #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    #define SSL_MODE_RELEASE_BUFFERS    0x00000010U
     #define ASN1_BOOLEAN                WOLFSSL_ASN1_BOOLEAN
     #define X509_get_ext                wolfSSL_X509_get_ext
     #define X509_cmp                    wolfSSL_X509_cmp
@@ -481,6 +482,9 @@ typedef WOLFSSL_X509_NAME_ENTRY X509_NAME_ENTRY;
                                       wolfSSL_X509_STORE_CTX_get0_current_issuer
 #define X509_STORE_CTX_get0_store       wolfSSL_X509_STORE_CTX_get0_store
 #define X509_STORE_CTX_get0_cert        wolfSSL_X509_STORE_CTX_get0_cert
+
+#define X509_STORE_set_verify_cb(s, c) \
+wolfSSL_X509_STORE_set_verify_cb((WOLFSSL_X509_STORE *)(s), (WOLFSSL_X509_STORE_CTX_verify_cb)(c))
 
 #define X509_STORE_new                  wolfSSL_X509_STORE_new
 #define X509_STORE_free                 wolfSSL_X509_STORE_free
