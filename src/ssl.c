@@ -37783,6 +37783,18 @@ long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
     return WOLFSSL_FAILURE;
 }
 
+#ifndef WOLFSSL_NO_STUB
+long wolfSSL_CTX_callback_ctrl(WOLFSSL_CTX* ctx, int cmd, void (*fp)(void))
+{
+    (void) ctx;
+    (void) cmd;
+    (void) fp;
+    WOLFSSL_STUB("wolfSSL_CTX_callback_ctrl");
+    return WOLFSSL_FAILURE;
+
+}
+#endif /* WOLFSSL_NO_STUB */
+
 #ifndef NO_WOLFSSL_STUB
 long wolfSSL_CTX_clear_extra_chain_certs(WOLFSSL_CTX* ctx)
 {
