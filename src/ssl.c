@@ -23343,16 +23343,90 @@ void wolfSSL_X509_STORE_CTX_cleanup(WOLFSSL_X509_STORE_CTX* ctx)
     /* Do nothing */
 }
 
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+/* Returns corresponding X509 error from internal ASN error <e> */
+static int GetX509Error(int e)
+{
+    switch (e) {
+        case ASN_BEFORE_DATE_E:
+            return X509_V_ERR_ERROR_IN_CERT_NOT_BEFORE_FIELD;
+        case ASN_AFTER_DATE_E:
+            return X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD;
+        case ASN_NO_SIGNER_E:
+            return X509_V_ERR_INVALID_CA;
+        case ASN_SELF_SIGNED_E:
+            return X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT;
+        case ASN_PATHLEN_INV_E:
+        case ASN_PATHLEN_SIZE_E:
+            return X509_V_ERR_PATH_LENGTH_EXCEEDED;
+        case ASN_SIG_OID_E:
+        case ASN_SIG_CONFIRM_E:
+        case ASN_SIG_HASH_E:
+        case ASN_SIG_KEY_E:
+            return X509_V_ERR_CERT_SIGNATURE_FAILURE;
+        default:
+            WOLFSSL_MSG("Error not configured or implemented yet");
+            return e;
+    }
+}
+#endif
 
+/* Verifies certificate chain using WOLFSSL_X509_STORE_CTX
+ * returns 0 on success or < 0 on failure.
+ */
 int wolfSSL_X509_verify_cert(WOLFSSL_X509_STORE_CTX* ctx)
 {
+    int ret = 0;
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    int depth = 0;
+    int error;
+    byte *afterDate, *beforeDate;
+#endif
     WOLFSSL_ENTER("wolfSSL_X509_verify_cert");
+
     if (ctx != NULL && ctx->store != NULL && ctx->store->cm != NULL
          && ctx->current_cert != NULL && ctx->current_cert->derCert != NULL) {
-        return wolfSSL_CertManagerVerifyBuffer(ctx->store->cm,
+            ret = wolfSSL_CertManagerVerifyBuffer(ctx->store->cm,
                     ctx->current_cert->derCert->buffer,
                     ctx->current_cert->derCert->length,
                     WOLFSSL_FILETYPE_ASN1);
+
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+        /* If there was an error, process it and add it to CTX */
+        if (ret < 0) {
+            /* Get corresponding X509 error */
+            error = GetX509Error(ret);
+            /* Set error depth */
+            if (ctx->chain)
+                depth = (int)ctx->chain->num;
+
+            wolfSSL_X509_STORE_CTX_set_error(ctx, error);
+            wolfSSL_X509_STORE_CTX_set_error_depth(ctx, depth);
+            ctx->store->verify_cb(0, ctx);
+        }
+
+        error = 0;
+        /* wolfSSL_CertManagerVerifyBuffer only returns ASN_AFTER_DATE_E or
+         ASN_BEFORE_DATE_E if there are no additional errors found in the
+         cert. Therefore, check if the cert is expired or not yet valid
+         in order to return the correct expected error. */
+        afterDate = ctx->current_cert->notAfter.data;
+        beforeDate = ctx->current_cert->notBefore.data;
+
+        if (ValidateDate(afterDate, *afterDate, AFTER) < 1) {
+            error = X509_V_ERR_CERT_HAS_EXPIRED;
+        }
+        else if (ValidateDate(beforeDate, *beforeDate, BEFORE) < 1) {
+            error = X509_V_ERR_CERT_NOT_YET_VALID;
+        }
+
+        if (error != 0 ) {
+            wolfSSL_X509_STORE_CTX_set_error(ctx, error);
+            wolfSSL_X509_STORE_CTX_set_error_depth(ctx, depth);
+            ctx->store->verify_cb(0, ctx);
+        }
+#endif /* OPENSSL_ALL || WOLFSSL_QT */
+        return ret;
     }
     return WOLFSSL_FATAL_ERROR;
 }
@@ -23659,6 +23733,24 @@ void wolfSSL_EVP_PKEY_free(WOLFSSL_EVP_PKEY* key)
                     }
                     break;
                 #endif /* HAVE_ECC */
+
+                #ifndef NO_DSA
+                case EVP_PKEY_DSA:
+                    if (key->dsa != NULL && key->ownDsa == 1) {
+                        wolfSSL_DSA_free(key->dsa);
+                        key->dsa = NULL;
+                    }
+                    break;
+                #endif /* NO_DSA */
+
+                #if !defined(NO_DH) && (defined(WOLFSSL_QT) || defined(OPENSSL_ALL))
+                case EVP_PKEY_DH:
+                    if (key->dh != NULL && key->ownDh == 1) {
+                        wolfSSL_DH_free(key->dh);
+                        key->dh = NULL;
+                    }
+                    break;
+                #endif /* ! NO_DH ... */
 
                 default:
                 break;

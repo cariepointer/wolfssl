@@ -131,8 +131,9 @@ typedef struct WOLFSSL_X509_INFO  WOLFSSL_X509_INFO;
 typedef struct WOLFSSL_CERT_MANAGER WOLFSSL_CERT_MANAGER;
 typedef struct WOLFSSL_SOCKADDR     WOLFSSL_SOCKADDR;
 typedef struct WOLFSSL_CRL          WOLFSSL_CRL;
+typedef struct WOLFSSL_X509_STORE_CTX WOLFSSL_X509_STORE_CTX;
 
-typedef void  *WOLFSSL_X509_STORE_CTX_verify_cb; /* verify callback */
+typedef void (*WOLFSSL_X509_STORE_CTX_verify_cb)(int, WOLFSSL_X509_STORE_CTX *);
 
 /* redeclare guard */
 #define WOLFSSL_TYPES_DEFINED
@@ -574,7 +575,7 @@ typedef struct WOLFSSL_BUFFER_INFO {
     unsigned int length;
 } WOLFSSL_BUFFER_INFO;
 
-typedef struct WOLFSSL_X509_STORE_CTX {
+struct WOLFSSL_X509_STORE_CTX {
     WOLFSSL_X509_STORE* store;    /* Store full of a CA cert chain */
     WOLFSSL_X509* current_cert;   /* current X509 (OPENSSL_EXTRA) */
 #ifdef WOLFSSL_ASIO
@@ -599,7 +600,7 @@ typedef struct WOLFSSL_X509_STORE_CTX {
     int   totalCerts;            /* number of peer cert buffers */
     WOLFSSL_BUFFER_INFO* certs;  /* peer certs */
     WOLFSSL_X509_STORE_CTX_verify_cb verify_cb; /* verify callback */
-} WOLFSSL_X509_STORE_CTX;
+};
 
 typedef char* WOLFSSL_STRING;
 
