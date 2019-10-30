@@ -38618,19 +38618,34 @@ int wolfSSL_get_state(const WOLFSSL* ssl)
 #endif /* HAVE_LIGHTY || HAVE_STUNNEL || WOLFSSL_MYSQL_COMPATIBLE */
 
 #if defined(OPENSSL_ALL) || defined(WOLFSSL_ASIO) || defined(WOLFSSL_HAPROXY) \
-    || defined(WOLFSSL_NGINX)
+    || defined(WOLFSSL_NGINX) || defined(WOLFSSL_QT)
 
-#ifndef NO_WOLFSSL_STUB
 long wolfSSL_ctrl(WOLFSSL* ssl, int cmd, long opt, void* pt)
 {
-    WOLFSSL_STUB("SSL_ctrl");
-    (void)ssl;
-    (void)cmd;
+    WOLFSSL_ENTER("wolfSSL_ctrl");
+    if (ssl == NULL)
+        return BAD_FUNC_ARG;
+
+    switch (cmd) {
+        case SSL_CTRL_SET_TLSEXT_HOSTNAME:
+            WOLFSSL_MSG("Entering Case: SSL_CTRL_SET_TLSEXT_HOSTNAME.");
+        #ifdef HAVE_SNI
+            if (pt == NULL) {
+                WOLFSSL_MSG("Passed in NULL Host Name.");
+                break;
+            }
+            return wolfSSL_set_tlsext_host_name(ssl, (const char*) pt);
+        #else
+            WOLFSSL_MSG("SNI not enabled.");
+            break;
+        #endif /* HAVE_SNI */
+        default:
+            WOLFSSL_MSG("Case not implemented.");
+    }
     (void)opt;
     (void)pt;
     return WOLFSSL_FAILURE;
 }
-#endif
 
 long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
 {
@@ -39088,7 +39103,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PrivateKey_EVP(WOLFSSL_EVP_PKEY** out,
     #endif /* HAVE_ECC */
     return pkey;
 }
-#endif /* OPENSSL_ALL || WOLFSSL_ASIO || WOLFSSL_HAPROXY */
+#endif /* OPENSSL_ALL || WOLFSSL_ASIO || WOLFSSL_HAPROXY || WOLFSSL_QT */
 
 
 /* stunnel compatibility functions*/
