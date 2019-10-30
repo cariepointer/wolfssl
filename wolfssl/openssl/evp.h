@@ -108,6 +108,7 @@ WOLFSSL_API const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_des_ede3_cbc(void);
 WOLFSSL_API const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_rc4(void);
 WOLFSSL_API const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_idea_cbc(void);
 WOLFSSL_API const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_enc_null(void);
+WOLFSSL_API const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_rc2_cbc(void);
 
 
 typedef union {
@@ -682,6 +683,7 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define EVP_add_cipher             wolfSSL_EVP_add_cipher
 #define EVP_cleanup                wolfSSL_EVP_cleanup
 #define EVP_read_pw_string         wolfSSL_EVP_read_pw_string
+#define EVP_rc2_cbc                wolfSSL_EVP_rc2_cbc
 
 #define OpenSSL_add_all_digests()  wolfSSL_EVP_init()
 #define OpenSSL_add_all_ciphers()  wolfSSL_EVP_init()
