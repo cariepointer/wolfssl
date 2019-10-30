@@ -292,6 +292,7 @@ typedef WOLFSSL_X509_VERIFY_PARAM X509_VERIFY_PARAM;
     #define X509_EXTENSION_get_data     wolfSSL_X509_EXTENSION_get_data
     #define X509_EXTENSION_new          wolfSSL_X509_EXTENSION_new
     #define X509_EXTENSION_free         wolfSSL_X509_EXTENSION_free
+    #define X509_gmtime_adj             wolfSSL_X509_gmtime_adj
 #endif
 
 #define DSA_dup_DH                      wolfSSL_DSA_dup_DH
