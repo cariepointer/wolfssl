@@ -945,6 +945,7 @@ enum {
 
 #define SSL_ctrl                        wolfSSL_ctrl
 #define SSL_CTX_ctrl                    wolfSSL_CTX_ctrl
+#define SSL_CTX_callback_ctrl           wolfSSL_CTX_callback_ctrl
 
 #define SSL3_RANDOM_SIZE                32 /* same as RAN_LEN in internal.h */
 
