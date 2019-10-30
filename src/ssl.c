@@ -18904,6 +18904,7 @@ WOLFSSL_ASN1_TIME* wolfSSL_X509_get_notAfter(const WOLFSSL_X509* x509)
 int wolfSSL_sk_X509_push(WOLF_STACK_OF(WOLFSSL_X509_NAME)* sk, WOLFSSL_X509* x509)
 {
     WOLFSSL_STACK* node;
+    WOLFSSL_ENTER("wolfSSL_sk_X509_push");
 
     if (sk == NULL || x509 == NULL) {
         return WOLFSSL_FAILURE;
@@ -19216,6 +19217,39 @@ WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void)
     if (gn->d.ia5 == NULL) {
         WOLFSSL_MSG("Issue creating ASN1_STRING struct");
         wolfSSL_GENERAL_NAME_free(gn);
+        return NULL;
+    }
+    gn->d.dNSName = wolfSSL_ASN1_STRING_new();
+    if (gn->d.dNSName == NULL) {
+        WOLFSSL_MSG("Error Creating: dNSName");
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.uniformResourceIdentifier = wolfSSL_ASN1_STRING_new();
+    if (gn->d.uniformResourceIdentifier == NULL) {
+        WOLFSSL_MSG("Error Creating: uniformResourceIdentifier");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.iPAddress = wolfSSL_ASN1_STRING_new();
+    if (gn->d.iPAddress == NULL) {
+        WOLFSSL_MSG("Error Creating: iPAddress");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.registeredID = wolfSSL_ASN1_OBJECT_new();
+    if (gn->d.registeredID == NULL) {
+        WOLFSSL_MSG("Error Creating: registeredID");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
+        wolfSSL_ASN1_STRING_free(gn->d.iPAddress);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
         return NULL;
     }
     return gn;
@@ -19785,6 +19819,9 @@ WOLFSSL_ASN1_OBJECT* wolfSSL_ASN1_OBJECT_new(void)
 
     XMEMSET(obj, 0, sizeof(WOLFSSL_ASN1_OBJECT));
     obj->d.ia5 = &(obj->d.ia5_internal);
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    obj->d.iPAddress = &(obj->d.iPAddress_internal);
+#endif
     obj->dynamic |= WOLFSSL_ASN1_DYNAMIC;
     return obj;
 }
@@ -20004,6 +20041,7 @@ char* wolfSSL_i2s_ASN1_STRING(WOLFSSL_v3_ext_method *method,
 
 void wolfSSL_set_connect_state(WOLFSSL* ssl)
 {
+    WOLFSSL_ENTER("wolfSSL_set_connect_state");
     if (ssl == NULL) {
         WOLFSSL_MSG("WOLFSSL struct pointer passed in was null");
         return;
