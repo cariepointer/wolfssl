@@ -22644,7 +22644,7 @@ int wolfSSL_i2d_X509(WOLFSSL_X509* x509, unsigned char** out)
         return MEMORY_E;
     }
 
-    if (*out == NULL) {
+    if (out != NULL && *out == NULL) {
         *out = (unsigned char*)XMALLOC(derSz, NULL, DYNAMIC_TYPE_OPENSSL);
         if (*out == NULL) {
             WOLFSSL_LEAVE("wolfSSL_i2d_X509", MEMORY_E);
@@ -22652,7 +22652,8 @@ int wolfSSL_i2d_X509(WOLFSSL_X509* x509, unsigned char** out)
         }
     }
 
-    XMEMCPY(*out, der, derSz);
+    if (out != NULL)
+        XMEMCPY(*out, der, derSz);
 
     WOLFSSL_LEAVE("wolfSSL_i2d_X509", derSz);
     return derSz;
@@ -23400,6 +23401,9 @@ int wolfSSL_X509_STORE_add_cert(WOLFSSL_X509_STORE* store, WOLFSSL_X509* x509)
 
 WOLFSSL_X509_STORE* wolfSSL_X509_STORE_new(void)
 {
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    WOLFSSL_STACK* sk;
+#endif
     WOLFSSL_X509_STORE* store = NULL;
     WOLFSSL_ENTER("SSL_X509_STORE_new");
 
@@ -23420,6 +23424,15 @@ WOLFSSL_X509_STORE* wolfSSL_X509_STORE_new(void)
         goto err_exit;
     if (InitCRL(store->crl, NULL) < 0)
         goto err_exit;
+#endif
+
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    sk = wolfSSL_sk_new_null();
+    if (sk == NULL) {
+        WOLFSSL_MSG("WOLFSSL_STACK memory error");
+        goto err_exit;
+    }
+    store->ex_data.data = sk;
 #endif
 
 #ifdef OPENSSL_EXTRA
@@ -23454,6 +23467,10 @@ void wolfSSL_X509_STORE_free(WOLFSSL_X509_STORE* store)
 #ifdef OPENSSL_EXTRA
         if (store->param != NULL)
             XFREE(store->param, NULL, DYNAMIC_TYPE_OPENSSL);
+#endif
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        if (store->ex_data.data != NULL)
+            wolfSSL_sk_GENERIC_free(store->ex_data.data);
 #endif
         XFREE(store, NULL, DYNAMIC_TYPE_X509_STORE);
     }
