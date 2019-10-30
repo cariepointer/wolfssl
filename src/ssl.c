@@ -21938,10 +21938,23 @@ char* wolfSSL_CIPHER_description(const WOLFSSL_CIPHER* cipher, char* in,
     char *ret = in;
     const char *keaStr, *authStr, *encStr, *macStr;
     size_t strLen;
+    WOLFSSL_ENTER("wolfSSL_CIPHER_description");
 
     if (cipher == NULL || in == NULL)
         return NULL;
 
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    /* if cipher is in the stack from wolfSSL_get_ciphers_compat then
+     * Return the description based on cipher_names[cipher->offset]
+     */
+    if (cipher->in_stack == TRUE) {
+        wolfSSL_sk_CIPHER_description((WOLFSSL_CIPHER*)cipher);
+        XSTRNCPY(in,cipher->description,len);
+        return ret;
+    }
+#endif
+
+    /* Get the cipher description based on the SSL session cipher */
     switch (cipher->ssl->specs.kea) {
         case no_kea:
             keaStr = "None";
@@ -22298,6 +22311,58 @@ void wolfSSL_BIO_set_flags(WOLFSSL_BIO* bio, int flags)
     }
 }
 
+void wolfSSL_BIO_clear_flags(WOLFSSL_BIO *bio, int flags)
+{
+    WOLFSSL_ENTER("wolfSSL_BIO_clear_flags");
+    if (bio != NULL) {
+        bio->flags &= ~flags;
+    }
+}
+
+/* Set ex_data for WOLFSSL_BIO
+ *
+ * bio  : BIO structure to set ex_data in
+ * idx  : Index of ex_data to set
+ * data : Data to set in ex_data
+ *
+ * Returns WOLFSSL_SUCCESS on success or WOLFSSL_FAILURE on failure
+ */
+int wolfSSL_BIO_set_ex_data(WOLFSSL_BIO *bio, int idx, void *data)
+{
+    WOLFSSL_ENTER("wolfSSL_BIO_set_ex_data");
+    #ifdef HAVE_EX_DATA
+    if (bio != NULL && idx < MAX_EX_DATA) {
+        bio->ex_data[idx] = data;
+        return WOLFSSL_SUCCESS;
+    }
+    #else
+    (void)bio;
+    (void)idx;
+    (void)data;
+    #endif
+    return WOLFSSL_FAILURE;
+}
+
+/* Get ex_data in WOLFSSL_BIO at given index
+ *
+ * bio  : BIO structure to get ex_data from
+ * idx  : Index of ex_data to get data from
+ *
+ * Returns void pointer to ex_data on success or NULL on failure
+ */
+void *wolfSSL_BIO_get_ex_data(WOLFSSL_BIO *bio, int idx)
+{
+    WOLFSSL_ENTER("wolfSSL_BIO_get_ex_data");
+    #ifdef HAVE_EX_DATA
+    if (bio != NULL && idx < MAX_EX_DATA && idx >= 0) {
+        return bio->ex_data[idx];
+    }
+    #else
+    (void)bio;
+    (void)idx;
+    #endif
+    return NULL;
+}
 
 #ifndef NO_WOLFSSL_STUB
 void wolfSSL_RAND_screen(void)
