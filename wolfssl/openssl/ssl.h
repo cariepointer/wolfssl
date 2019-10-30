@@ -921,6 +921,7 @@ enum {
 #define SSL_CTRL_CLEAR_NUM_RENEGOTIATIONS         11
 #define SSL_CTRL_GET_TOTAL_RENEGOTIATIONS         12
 #define SSL_CTRL_SET_TMP_DH                       3
+#define SSL_CTRL_SET_TMP_ECDH                     4
 #define SSL_CTRL_SET_TLSEXT_DEBUG_ARG             57
 #define SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE       65
 #define SSL_CTRL_GET_TLSEXT_STATUS_REQ_EXTS       66
@@ -930,8 +931,8 @@ enum {
 #define SSL_CTRL_GET_TLSEXT_STATUS_REQ_OCSP_RESP  70
 #define SSL_CTRL_SET_TLSEXT_STATUS_REQ_OCSP_RESP  71
 
-#define SSL_CTRL_SET_TMP_DH                     3
 #define SSL_CTRL_EXTRA_CHAIN_CERT               14
+#define SSL_CTRL_OPTIONS                        32
 
 #define SSL_CTRL_SET_SESS_CACHE_SIZE            42
 #define SSL_CTRL_GET_READ_AHEAD                 40
