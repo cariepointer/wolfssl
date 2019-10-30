@@ -765,6 +765,7 @@ typedef WOLFSSL_ASN1_BIT_STRING    ASN1_BIT_STRING;
 /*#endif*/
 
 #define CONF_modules_unload(a)
+#define CONF_get1_default_config_file wolfSSL_CONF_get1_default_config_file
 
 #define SSL_get_hit                     wolfSSL_session_reused
 
