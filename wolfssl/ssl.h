@@ -514,6 +514,9 @@ struct WOLFSSL_X509_STORE {
     int                   isDynamic;
     WOLFSSL_X509_VERIFY_PARAM* param;    /* certificate validation parameter */
 #endif
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    WOLFSSL_X509_STORE_CTX_verify_cb verify_cb;
+#endif
 #if defined(OPENSSL_EXTRA) && defined(HAVE_CRL)
     WOLFSSL_X509_CRL *crl;
 #endif
@@ -1261,6 +1264,8 @@ WOLFSSL_API int   wolfSSL_X509_STORE_CTX_get_error_depth(WOLFSSL_X509_STORE_CTX*
 
 WOLFSSL_API void  wolfSSL_X509_STORE_CTX_set_verify_cb(WOLFSSL_X509_STORE_CTX *ctx,
                                   WOLFSSL_X509_STORE_CTX_verify_cb verify_cb);
+WOLFSSL_API void wolfSSL_X509_STORE_set_verify_cb(WOLFSSL_X509_STORE *st,
+                                 WOLFSSL_X509_STORE_CTX_verify_cb verify_cb);
 WOLFSSL_API int wolfSSL_i2d_X509_NAME(WOLFSSL_X509_NAME* n,
                                                            unsigned char** out);
 #ifndef NO_RSA
@@ -1944,6 +1949,9 @@ WOLFSSL_API int  wolfSSL_CTX_set_session_id_context(WOLFSSL_CTX*,
                                             const unsigned char*, unsigned int);
 WOLFSSL_ABI WOLFSSL_API WOLFSSL_X509* wolfSSL_get_peer_certificate(WOLFSSL*);
 WOLFSSL_API WOLF_STACK_OF(WOLFSSL_X509)* wolfSSL_get_peer_cert_chain(const WOLFSSL*);
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+WOLFSSL_API WOLF_STACK_OF(WOLFSSL_X509)* wolfSSL_set_peer_cert_chain(WOLFSSL* ssl);
+#endif
 
 #ifdef OPENSSL_EXTRA
 WOLFSSL_API int wolfSSL_want(WOLFSSL*);

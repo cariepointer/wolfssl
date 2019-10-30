@@ -14486,6 +14486,17 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
             return;
         ctx->verify_cb = verify_cb;
     }
+
+    void wolfSSL_X509_STORE_set_verify_cb(WOLFSSL_X509_STORE *st,
+                                 WOLFSSL_X509_STORE_CTX_verify_cb verify_cb)
+    {
+        WOLFSSL_ENTER("WOLFSSL_X509_STORE_set_verify_cb");
+        if (st != NULL) {
+            st->verify_cb = verify_cb;
+        }
+    }
+
+
 #endif /* !NO_CERTS */
 
     WOLFSSL_BIO_METHOD* wolfSSL_BIO_f_buffer(void)
@@ -16117,6 +16128,16 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD *md)
         return WOLFSSL_SUCCESS;
     }
 
+    /* Permanent stub for Qt compilation. */
+    #if defined(WOLFSSL_QT) && !defined(NO_WOLFSSL_STUB)
+    const WOLFSSL_EVP_CIPHER* wolfSSL_EVP_rc2_cbc(void)
+    {
+        WOLFSSL_ENTER("wolfSSL_EVP_rc2_cbc");
+        WOLFSSL_STUB("EVP_rc2_cbc");
+        return NULL;
+    }
+    #endif
+
 #ifndef NO_AES
     static int   AesSetKey_ex(Aes* aes, const byte* key, word32 len,
                               const byte* iv, int dir, int direct)
@@ -17621,13 +17642,18 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD *md)
         /* WOLFSSL_MODE_ACCEPT_MOVING_WRITE_BUFFER is wolfSSL default mode */
 
         WOLFSSL_ENTER("SSL_CTX_set_mode");
-        if (mode == SSL_MODE_ENABLE_PARTIAL_WRITE)
-            ctx->partialWrite = 1;
-        #ifdef DEBUG_WOLFSSL
-        else {
-            WOLFSSL_MSG("mode is not supported.");
+        switch(mode) {
+            case SSL_MODE_ENABLE_PARTIAL_WRITE:
+                ctx->partialWrite = 1;
+                break;
+            #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+            case SSL_MODE_RELEASE_BUFFERS:
+                WOLFSSL_MSG("SSL_MODE_RELEASE_BUFFERS not implemented.");
+                break;
+            #endif
+            default:
+                WOLFSSL_MSG("Mode Not Implemented");
         }
-        #endif
 
         return mode;
     }
@@ -17896,6 +17922,8 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD *md)
     #else
         DecodedCert  cert[1];
     #endif
+        if (x509 == NULL || in == NULL || len <= 0)
+            return BAD_FUNC_ARG;
 
     #ifdef WOLFSSL_SMALL_STACK
         cert = (DecodedCert*)XMALLOC(sizeof(DecodedCert), NULL,
@@ -17908,7 +17936,9 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD *md)
          */
         InitDecodedCert(cert, (byte*)in, len, NULL);
         if ((ret = ParseCertRelative(cert, CERT_TYPE, 0, NULL)) == 0) {
-            InitX509(x509, 0, NULL);
+        /* Check if x509 was not previously initialized by wolfSSL_X509_new() */
+            if (x509->dynamicMemory != TRUE)
+                InitX509(x509, 0, NULL);
             ret = CopyDecodedToX509(x509, cert);
             FreeDecodedCert(cert);
         }
@@ -17944,6 +17974,80 @@ int wolfSSL_EVP_MD_type(const WOLFSSL_EVP_MD *md)
 
 #endif /* KEEP_PEER_CERT */
 
+#if defined(SESSION_CERTS)
+/*  Return stack of peer certs.
+ *      If Qt or OPENSSL_ALL is defined then return ssl->peerCertChain.
+ *      All other cases return &ssl->session.chain
+ * ssl->peerCertChain is type WOLFSSL_STACK*
+ * ssl->session.chain is type WOLFSSL_X509_CHAIN
+ * Caller does not need to free return. The stack is Free'd when WOLFSSL* ssl is.
+ */
+WOLF_STACK_OF(WOLFSSL_X509)* wolfSSL_get_peer_cert_chain(const WOLFSSL* ssl)
+{
+    WOLFSSL_STACK* sk;
+    WOLFSSL_ENTER("wolfSSL_get_peer_cert_chain");
+
+    if (ssl == NULL)
+        return NULL;
+
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        if (ssl->peerCertChain == NULL)
+            wolfSSL_set_peer_cert_chain((WOLFSSL*) ssl);
+        sk = ssl->peerCertChain;
+    #else
+        sk = (WOLF_STACK_OF(WOLFSSL_X509)* )&ssl->session.chain;
+    #endif
+
+    if (sk == NULL) {
+        WOLFSSL_MSG("Error: Null Peer Cert Chain");
+    }
+    return sk;
+}
+
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+WOLF_STACK_OF(WOLFSSL_X509)* wolfSSL_set_peer_cert_chain(WOLFSSL* ssl)
+{
+    WOLFSSL_STACK* sk;
+    WOLFSSL_X509* x509;
+    int i = 0;
+    int ret;
+
+    WOLFSSL_ENTER("wolfSSL_set_peer_cert_chain");
+    if ((ssl == NULL) || (ssl->session.chain.count == 0))
+        return NULL;
+
+    sk = wolfSSL_sk_X509_new();
+    i = ssl->session.chain.count-1;
+    for (; i >= 0; i--) {
+        /* For servers, the peer certificate chain does not include the peer
+            certificate, so do not add it to the stack */
+        if (ssl->options.side == WOLFSSL_SERVER_END && i == 0)
+            continue;
+        x509 = wolfSSL_X509_new();
+        if (x509 == NULL) {
+            WOLFSSL_MSG("Error Creating X509");
+            return NULL;
+        }
+        ret = DecodeToX509(x509, ssl->session.chain.certs[i].buffer,
+                             ssl->session.chain.certs[i].length);
+
+        if (ret != 0 || wolfSSL_sk_X509_push(sk, x509) != WOLFSSL_SUCCESS) {
+            WOLFSSL_MSG("Error decoding cert");
+            wolfSSL_X509_free(x509);
+            wolfSSL_sk_X509_free(sk);
+            return NULL;
+        }
+    }
+
+    if (sk == NULL) {
+        WOLFSSL_MSG("Null session chain");
+    }
+    /* This is Free'd when ssl is Free'd */
+    ssl->peerCertChain = sk;
+    return sk;
+}
+#endif /* OPENSSL_ALL || WOLFSSL_QT */
+#endif /* SESSION_CERTS */
 
 #ifndef NO_CERTS
 #if defined(KEEP_PEER_CERT) || defined(SESSION_CERTS) || \
