@@ -19787,7 +19787,8 @@ const char* wolfSSL_CIPHER_get_name(const WOLFSSL_CIPHER* cipher)
         return NULL;
     }
 
-    #if !defined(WOLFSSL_CIPHER_INTERNALNAME) && !defined(NO_ERROR_STRINGS)
+    #if !defined(WOLFSSL_CIPHER_INTERNALNAME) && !defined(NO_ERROR_STRINGS) && \
+        !defined(WOLFSSL_QT)
         return GetCipherNameIana(cipher->cipherSuite0, cipher->cipherSuite);
     #else
         return wolfSSL_get_cipher_name_from_suite(cipher->cipherSuite0,
@@ -19862,6 +19863,44 @@ const char* wolfSSL_get_cipher_name_iana_from_suite(const byte cipherSuite0,
 {
     return GetCipherNameIana(cipherSuite0, cipherSuite);
 }
+
+
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+/* Creates and returns a new WOLFSSL_CIPHER stack. */
+WOLFSSL_STACK* wolfSSL_sk_new_cipher(void)
+{
+    WOLFSSL_STACK* sk;
+    WOLFSSL_ENTER("wolfSSL_sk_new_cipher");
+
+    sk = wolfSSL_sk_new_null();
+    if (sk == NULL)
+        return NULL;
+    sk->type = STACK_TYPE_CIPHER;
+
+    return sk;
+}
+
+#ifndef NO_WOLFSSL_STUB
+/* Keep as stubs for now */
+/* return 1 on success 0 on fail */
+int wolfSSL_sk_CIPHER_push(WOLF_STACK_OF(WOLFSSL_CIPHER)* sk,
+                                                      WOLFSSL_CIPHER* cipher)
+{
+    WOLFSSL_ENTER("wolfSSL_sk_CIPHER_push");
+    (void)sk;
+    (void)cipher;
+    return 0;
+}
+
+
+WOLFSSL_CIPHER* wolfSSL_sk_CIPHER_pop(WOLF_STACK_OF(WOLFSSL_CIPHER)* sk)
+{
+    WOLFSSL_ENTER("wolfSSL_sk_CIPHER_pop");
+    (void)sk;
+    return NULL;
+}
+#endif /* NO_WOLFSSL_STUB */
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 
 word32 wolfSSL_CIPHER_get_id(const WOLFSSL_CIPHER* cipher)
 {
