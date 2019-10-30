@@ -20149,6 +20149,10 @@ int wolfSSL_X509_NAME_get_text_by_NID(WOLFSSL_X509_NAME* name,
             text = name->fullName.fullName + name->fullName.dcIdx[0];
             textSz = name->fullName.dcLen[0];
             break;
+        case NID_emailAddress:
+            text = name->fullName.fullName + name->fullName.emailIdx;
+            textSz = name->fullName.emailLen;
+            break;
     #ifdef WOLFSSL_CERT_EXT
         case ASN_BUS_CAT:
             text = name->fullName.fullName + name->fullName.bcIdx;
@@ -20157,7 +20161,7 @@ int wolfSSL_X509_NAME_get_text_by_NID(WOLFSSL_X509_NAME* name,
     #endif
         default:
             WOLFSSL_MSG("Entry type not found");
-            return SSL_FATAL_ERROR;
+            return WOLFSSL_FATAL_ERROR;
     }
 
     /* if buf is NULL return size of buffer needed (minus null char) */
@@ -20191,6 +20195,9 @@ WOLFSSL_EVP_PKEY* wolfSSL_X509_get_pubkey(WOLFSSL_X509* x509)
         if (key != NULL) {
             if (x509->pubKeyOID == RSAk) {
                 key->type = EVP_PKEY_RSA;
+            }
+            else if (x509->pubKeyOID == DSAk) {
+                key->type = EVP_PKEY_DSA;
             }
             else {
                 key->type = EVP_PKEY_EC;
@@ -20259,6 +20266,26 @@ WOLFSSL_EVP_PKEY* wolfSSL_X509_get_pubkey(WOLFSSL_X509* x509)
                 key->ecc->inSet = 1;
             }
             #endif /* HAVE_ECC */
+
+            #ifndef NO_DSA
+            if (key->type == EVP_PKEY_DSA) {
+                key->ownDsa = 1;
+                key->dsa = wolfSSL_DSA_new();
+                if (key->dsa == NULL) {
+                    XFREE(key, x509->heap, DYNAMIC_TYPE_PUBLIC_KEY);
+                    return NULL;
+                }
+
+                if (wolfSSL_DSA_LoadDer_ex(key->dsa,
+                            (const unsigned char*)key->pkey.ptr, key->pkey_sz, \
+                            WOLFSSL_DSA_LOAD_PUBLIC) != SSL_SUCCESS) {
+                    wolfSSL_DSA_free(key->dsa);
+                    key->dsa = NULL;
+                    XFREE(key, x509->heap, DYNAMIC_TYPE_PUBLIC_KEY);
+                    return NULL;
+                }
+            }
+            #endif /* NO_DSA */
         }
     }
     return key;
@@ -20357,9 +20384,14 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
                 case SUBJ_KEY_OID: isSet = x509->subjKeyIdSet; break;
                 case KEY_USAGE_OID: isSet = x509->keyUsageSet; break;
                 case CRL_DIST_OID: isSet = x509->CRLdistSet; break;
-                #ifdef WOLFSSL_SEP
+                case EXT_KEY_USAGE_OID: isSet = ((x509->extKeyUsageSrc) ? 1 : 0);
+                    break;
+                case AUTH_INFO_OID: isSet = x509->authInfoSet; break;
+                #if defined(WOLFSSL_SEP) || defined(WOLFSSL_QT)
                     case CERT_POLICY_OID: isSet = x509->certPolicySet; break;
-                #endif /* WOLFSSL_SEP */
+                #endif /* WOLFSSL_SEP || WOLFSSL_QT */
+                default:
+                    WOLFSSL_MSG("NID not in table");
             }
         }
 
@@ -20383,9 +20415,9 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
                 case SUBJ_KEY_OID: crit = x509->subjKeyIdCrit; break;
                 case KEY_USAGE_OID: crit = x509->keyUsageCrit; break;
                 case CRL_DIST_OID: crit= x509->CRLdistCrit; break;
-                #ifdef WOLFSSL_SEP
+                #if defined(WOLFSSL_SEP) || defined(WOLFSSL_QT)
                     case CERT_POLICY_OID: crit = x509->certPolicyCrit; break;
-                #endif /* WOLFSSL_SEP */
+                #endif /* WOLFSSL_SEP || WOLFSSL_QT */
             }
         }
 
@@ -20503,7 +20535,7 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
         WOLFSSL_ENTER("wolfSSL_X509_NAME_entry_count");
 
         if (name != NULL)
-            count = name->fullName.entryCount;
+            count = name->fullName.locSz;
 
         WOLFSSL_LEAVE("wolfSSL_X509_NAME_entry_count", count);
         return count;
