@@ -18432,6 +18432,7 @@ WOLFSSL_ASN1_TIME* wolfSSL_X509_get_notAfter(WOLFSSL_X509* x509)
 int wolfSSL_sk_X509_push(WOLF_STACK_OF(WOLFSSL_X509_NAME)* sk, WOLFSSL_X509* x509)
 {
     WOLFSSL_STACK* node;
+    WOLFSSL_ENTER("wolfSSL_sk_X509_push");
 
     if (sk == NULL || x509 == NULL) {
         return WOLFSSL_FAILURE;
@@ -18523,7 +18524,8 @@ void* wolfSSL_sk_X509_shift(WOLF_STACK_OF(WOLFSSL_X509)* sk)
  * sk  stack to free nodes in
  * f   X509 free function
  */
-void wolfSSL_sk_X509_pop_free(STACK_OF(WOLFSSL_X509)* sk, void f (WOLFSSL_X509*)){
+void wolfSSL_sk_X509_pop_free(STACK_OF(WOLFSSL_X509)* sk, void f (WOLFSSL_X509*))
+{
     WOLFSSL_STACK* node;
 
     WOLFSSL_ENTER("wolfSSL_sk_X509_pop_free");
@@ -18552,8 +18554,10 @@ void wolfSSL_sk_X509_pop_free(STACK_OF(WOLFSSL_X509)* sk, void f (WOLFSSL_X509*)
 
 
 /* free structure for x509 stack */
-void wolfSSL_sk_X509_free(WOLF_STACK_OF(WOLFSSL_X509)* sk) {
+void wolfSSL_sk_X509_free(WOLF_STACK_OF(WOLFSSL_X509)* sk)
+{
     WOLFSSL_STACK* node;
+    WOLFSSL_ENTER("wolfSSL_sk_X509_free");
 
     if (sk == NULL) {
         return;
@@ -18718,7 +18722,8 @@ int wolfSSL_sk_push_node(WOLFSSL_STACK** stack, WOLFSSL_STACK* in)
 }
 
 /* Creates and returns new GENERAL_NAME structure */
-WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void) {
+WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void)
+{
     WOLFSSL_GENERAL_NAME* gn;
     WOLFSSL_ENTER("GENERAL_NAME_new");
 
@@ -18733,6 +18738,39 @@ WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void) {
     if (gn->d.ia5 == NULL) {
         WOLFSSL_MSG("Issue creating ASN1_STRING struct");
         wolfSSL_GENERAL_NAME_free(gn);
+        return NULL;
+    }
+    gn->d.dNSName = wolfSSL_ASN1_STRING_new();
+    if (gn->d.dNSName == NULL) {
+        WOLFSSL_MSG("Error Creating: dNSName");
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.uniformResourceIdentifier = wolfSSL_ASN1_STRING_new();
+    if (gn->d.uniformResourceIdentifier == NULL) {
+        WOLFSSL_MSG("Error Creating: uniformResourceIdentifier");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.iPAddress = wolfSSL_ASN1_STRING_new();
+    if (gn->d.iPAddress == NULL) {
+        WOLFSSL_MSG("Error Creating: iPAddress");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
+        return NULL;
+    }
+    gn->d.registeredID = wolfSSL_ASN1_OBJECT_new();
+    if (gn->d.registeredID == NULL) {
+        WOLFSSL_MSG("Error Creating: registeredID");
+        wolfSSL_ASN1_STRING_free(gn->d.ia5);
+        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
+        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
+        wolfSSL_ASN1_STRING_free(gn->d.iPAddress);
+        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
         return NULL;
     }
     return gn;
@@ -19295,6 +19333,9 @@ WOLFSSL_ASN1_OBJECT* wolfSSL_ASN1_OBJECT_new(void)
 
     XMEMSET(obj, 0, sizeof(WOLFSSL_ASN1_OBJECT));
     obj->d.ia5 = &(obj->d.ia5_internal);
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    obj->d.iPAddress = &(obj->d.iPAddress_internal);
+#endif
     obj->dynamic |= WOLFSSL_ASN1_DYNAMIC;
     return obj;
 }
@@ -19454,18 +19495,29 @@ void wolfSSL_sk_ASN1_OBJECT_pop_free(WOLF_STACK_OF(WOLFSSL_ASN1_OBJECT)* sk,
     XFREE(sk, NULL, DYNAMIC_TYPE_ASN1);
 }
 
+/* Converts the passed WOLFSSL_ASN1_STRING* to UTF8 and stores it in *out.
+   * The length of the result stored in *out is returned as an integer
+   * upon success. If *out is NULL, -1 is returned.
+   */
 int wolfSSL_ASN1_STRING_to_UTF8(unsigned char **out, WOLFSSL_ASN1_STRING *in)
 {
-    /*
-       ASN1_STRING_to_UTF8() converts the string in to UTF8 format,
-       the converted data is allocated in a buffer in *out.
-       The length of out is returned or a negative error code.
-       The buffer *out should be free using OPENSSL_free().
-       */
-    (void)out;
-    (void)in;
-    WOLFSSL_STUB("ASN1_STRING_to_UTF8");
-    return -1;
+    WOLFSSL_ENTER("wolfSSL_ASN1_STRING_to_UTF8");
+
+    if (out == NULL || in == NULL){
+        WOLFSSL_MSG("NULL argument passed to function");
+        return WOLFSSL_FATAL_ERROR;
+    }
+
+    *out = (unsigned char*)XMALLOC(in->length+1,NULL,DYNAMIC_TYPE_TMP_BUFFER);
+    if (*out == NULL){
+         WOLFSSL_MSG("'out' is NULL after XMALLOC");
+         return WOLFSSL_FATAL_ERROR;
+    }
+
+    XMEMSET(*out,0,in->length+1);
+    XMEMCPY((char*)*out,in->data,in->length);
+
+    return in->length;
 }
 
 /* Returns string representation of ASN1_STRING */
@@ -19514,6 +19566,7 @@ char* wolfSSL_i2s_ASN1_STRING(WOLFSSL_v3_ext_method *method, const WOLFSSL_ASN1_
 
 void wolfSSL_set_connect_state(WOLFSSL* ssl)
 {
+    WOLFSSL_ENTER("wolfSSL_set_connect_state");
     if (ssl == NULL) {
         WOLFSSL_MSG("WOLFSSL struct pointer passed in was null");
         return;
