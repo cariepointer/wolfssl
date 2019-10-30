@@ -797,6 +797,7 @@ typedef WOLFSSL_X509_NAME_ENTRY X509_NAME_ENTRY;
 /*#endif*/
 
 #define CONF_modules_unload(a)
+#define CONF_get1_default_config_file wolfSSL_CONF_get1_default_config_file
 
 #define SSL_get_hit                     wolfSSL_session_reused
 

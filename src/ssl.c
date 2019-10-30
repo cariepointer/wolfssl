@@ -23573,6 +23573,28 @@ void wolfSSL_X509_STORE_CTX_set_time(WOLFSSL_X509_STORE_CTX* ctx,
     ctx->param->check_time = t;
     ctx->param->flags |= WOLFSSL_USE_CHECK_TIME;
 }
+
+#ifndef NO_WOLFSSL_STUB
+int wolfSSL_X509_STORE_CTX_set_purpose(WOLFSSL_X509_STORE_CTX *ctx,
+                                       int purpose)
+{
+    (void)ctx;
+    (void)purpose;
+    WOLFSSL_STUB("wolfSSL_X509_STORE_CTX_set_purpose");
+    return 0;
+}
+#endif
+
+#ifndef NO_WOLFSSL_STUB
+/* Returns default file name and path of config file. However
+   a wolfssl.cnf file is not currently supported */
+char* wolfSSL_CONF_get1_default_config_file(void)
+{
+    WOLFSSL_ENTER("wolfSSL_CONF_get1_default_config_file");
+    WOLFSSL_STUB("CONF_get1_default_config_file");
+    return NULL;
+}
+#endif
 /******************************************************************************
 * wolfSSL_X509_VERIFY_PARAM_set1_host - sets the DNS hostname to name
 * hostnames is cleared if name is NULL or empty.
