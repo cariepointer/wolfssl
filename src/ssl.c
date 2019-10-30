@@ -13183,6 +13183,10 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         if (hint == 0)
             ctx->server_hint[0] = '\0';
         else {
+            /* Qt does not call CTX_set_*_psk_callbacks where havePSK is set */
+            #ifdef WOLFSSL_QT
+            ctx->havePSK=1;
+            #endif
             XSTRNCPY(ctx->server_hint, hint, MAX_PSK_ID_LEN);
             ctx->server_hint[MAX_PSK_ID_LEN] = '\0'; /* null term */
         }
@@ -13602,6 +13606,20 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
             return WOLFSSL_FATAL_ERROR;
 
         return  WOLFSSL_SUCCESS;
+    }
+
+    int wolfSSL_OpenSSL_add_all_algorithms_conf(void)
+    {
+        WOLFSSL_ENTER("wolfSSL_OpenSSL_add_all_algorithms_conf");
+        /* This function is currently the same as
+        wolfSSL_OpenSSL_add_all_algorithms_noconf since we do not employ
+        the use of a wolfssl.cnf type configuration file and is only used for
+        OpenSSL compatability. */
+
+        if (wolfSSL_add_all_algorithms() == WOLFSSL_FATAL_ERROR) {
+            return WOLFSSL_FATAL_ERROR;
+        }
+        return WOLFSSL_SUCCESS;
     }
 
    /* returns previous set cache size which stays constant */
