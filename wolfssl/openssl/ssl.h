@@ -525,6 +525,7 @@ wolfSSL_X509_STORE_set_verify_cb((WOLFSSL_X509_STORE *)(s), (WOLFSSL_X509_STORE_
 #define X509_get_X509_PUBKEY            wolfSSL_X509_get_X509_PUBKEY
 #define X509_get0_tbs_sigalg            wolfSSL_X509_get0_tbs_sigalg
 #define X509_PUBKEY_get0_param          wolfSSL_X509_PUBKEY_get0_param
+#define X509_PUBKEY_get                 wolfSSL_X509_PUBKEY_get
 #define X509_ALGOR_get0                 wolfSSL_X509_ALGOR_get0
 
 #define sk_X509_REVOKED_num             wolfSSL_sk_X509_REVOKED_num
