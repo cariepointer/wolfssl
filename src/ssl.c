@@ -19157,6 +19157,41 @@ int wolfSSL_sk_push_node(WOLFSSL_STACK** stack, WOLFSSL_STACK* in)
     return WOLFSSL_SUCCESS;
 }
 
+/* return 1 on success 0 on fail */
+int wolfSSL_sk_push(WOLFSSL_STACK* sk, const void *data)
+{
+    int ret = WOLFSSL_FAILURE;
+    WOLFSSL_ENTER("wolfSSL_sk_push");
+
+    switch (sk->type) {
+    #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+        case STACK_TYPE_X509:
+            ret = wolfSSL_sk_X509_push(sk, (WOLFSSL_X509*) data);
+            break;
+        case STACK_TYPE_CIPHER:
+            ret = wolfSSL_sk_CIPHER_push(sk, (WOLFSSL_CIPHER*) data);
+            break;
+        case STACK_TYPE_GEN_NAME:
+            ret = wolfSSL_sk_ASN1_OBJECT_push(sk, (WOLFSSL_ASN1_OBJECT*) data);
+            break;
+        case STACK_TYPE_ACCESS_DESCRIPTION:
+            ret = wolfSSL_sk_ACCESS_DESCRIPTION_push(sk,
+                                            (WOLFSSL_ACCESS_DESCRIPTION*) data);
+            break;
+        case STACK_TYPE_NULL:
+            ret = wolfSSL_sk_GENERIC_push(sk, (void*) data);
+            break;
+        case STACK_TYPE_OBJ:
+            ret = wolfSSL_sk_ASN1_OBJECT_push(sk, (WOLFSSL_ASN1_OBJECT*) data);
+            break;
+    #endif
+        default:
+            ret = wolfSSL_sk_ASN1_OBJECT_push(sk, (WOLFSSL_ASN1_OBJECT*) data);
+            break;
+    }
+
+    return ret;
+}
 
 /* Creates and returns new GENERAL_NAME structure */
 WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void)
@@ -19508,6 +19543,264 @@ void wolfSSL_sk_X509_EXTENSION_pop_free(
         wolfSSL_sk_free_node(toFree);
     }
 }
+
+#if defined(HAVE_ECC)
+size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_BUILTIN_CURVE *r, size_t nitems)
+{
+    size_t x;
+    size_t eccSetCnt = 0;
+//    int eccEnum;
+
+    WOLFSSL_ENTER("wolfSSL_EC_get_builtin_curves");
+
+    for (x = 0; ecc_sets[x].size != 0; x++) {
+        eccSetCnt++;
+    }
+
+    if (r == NULL || (int)nitems < 1)
+        return eccSetCnt;
+
+    for (x = 0; x < nitems; x++) {
+        if (x < eccSetCnt) {
+//            eccEnum = ecc_sets[x].id;
+            /* Convert enum value in ecc_curve_id to OpenSSL NID */
+//            r[x].nid = EccEnumToNID(eccEnum);
+            r[x].comment = ecc_sets[x].name;
+        }
+        else
+            break;
+    }
+
+    return eccSetCnt;
+}
+
+/* Copies ecc_key into new WOLFSSL_EC_KEY object
+ *
+ * src  : EC_KEY to duplicate. If EC_KEY is not null, create new EC_KEY and copy
+ * internal ecc_key from src to dup.
+ *
+ * Returns pointer to duplicate EC_KEY.
+ */
+WOLFSSL_EC_KEY *wolfSSL_EC_KEY_dup(const WOLFSSL_EC_KEY *src)
+{
+    WOLFSSL_EC_KEY *dup;
+    ecc_key *key;
+    int ret;
+
+    WOLFSSL_ENTER("wolfSSL_EC_KEY_dup");
+
+    if (src == NULL || src->internal == NULL || src->group == NULL || \
+       src->pub_key == NULL || src->priv_key == NULL) {
+
+        WOLFSSL_MSG("src NULL error");
+        return NULL;
+    }
+
+    dup = wolfSSL_EC_KEY_new();
+    if (dup == NULL) {
+        WOLFSSL_MSG("wolfSSL_EC_KEY_new error");
+        return NULL;
+    }
+
+    key = (ecc_key*)dup->internal;
+    if (key == NULL) {
+        WOLFSSL_MSG("ecc_key NULL error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    ret = mp_copy((mp_int*)src->internal, (mp_int*)dup->internal);
+    if (ret != MP_OKAY) {
+        WOLFSSL_MSG("mp_copy error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    /* Copy group */
+    if (dup->group == NULL) {
+        WOLFSSL_MSG("EC_GROUP_new_by_curve_name error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    dup->group->curve_idx = src->group->curve_idx;
+    dup->group->curve_nid = src->group->curve_nid;
+    dup->group->curve_oid = src->group->curve_oid;
+
+    /* Copy public key */
+    if (src->pub_key->internal == NULL || dup->pub_key->internal == NULL) {
+        WOLFSSL_MSG("NULL pub_key error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    ret = wc_ecc_copy_point((ecc_point*)src->pub_key->internal, \
+                            (ecc_point*)dup->pub_key->internal);
+    if (ret != MP_OKAY) {
+        WOLFSSL_MSG("ecc_copy_point error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    /* Copy private key */
+    if (src->priv_key->internal == NULL || dup->priv_key->internal == NULL) {
+        WOLFSSL_MSG("NULL priv_key error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+
+    ret = mp_copy((mp_int*)src->priv_key->internal, \
+                  (mp_int*)dup->priv_key->internal);
+    if (ret != MP_OKAY) {
+        WOLFSSL_MSG("mp_copy error");
+        wolfSSL_EC_KEY_free(dup);
+        return NULL;
+    }
+    src->priv_key->neg = dup->priv_key->neg;
+
+    return dup;
+
+}
+#endif /* HAVE_ECC */
+
+#if !defined(NO_DH)
+int wolfSSL_DH_check(const WOLFSSL_DH *dh, int *codes)
+{
+    int isPrime = MP_NO, codeTmp = 0;
+    WC_RNG rng;
+
+    WOLFSSL_ENTER("wolfSSL_DH_check");
+    if (dh == NULL){
+        return WOLFSSL_FAILURE;
+    }
+
+    if (dh->g == NULL || dh->g->internal == NULL){
+        codeTmp = DH_NOT_SUITABLE_GENERATOR;
+    }
+
+    if (dh->p == NULL || dh->p->internal == NULL){
+        codeTmp = DH_CHECK_P_NOT_PRIME;
+    }
+    else
+    {
+        /* test if dh->p has prime */
+        if (wc_InitRng(&rng) == 0){
+            mp_prime_is_prime_ex((mp_int*)dh->p->internal,8,&isPrime,&rng);
+        }
+        else {
+            WOLFSSL_MSG("Error initializing rng\n");
+            return WOLFSSL_FAILURE;
+        }
+        wc_FreeRng(&rng);
+        if (isPrime != MP_YES){
+            codeTmp = DH_CHECK_P_NOT_PRIME;
+        }
+    }
+    /* User may choose to enter NULL for codes if they don't want to check it*/
+    if (codes != NULL){
+        *codes = codeTmp;
+    }
+
+    /* if codeTmp was set,some check was flagged invalid */
+    if (codeTmp){
+        return WOLFSSL_FAILURE;
+    }
+
+    return WOLFSSL_SUCCESS;
+}
+
+/* Converts DER encoded DH parameters to a WOLFSSL_DH structure.
+ *
+ * dh   : structure to copy DH parameters into.
+ * pp   : DER encoded DH parameters
+ * length   : length to copy
+ *
+ * Returns pointer to WOLFSSL_DH structure on success, or NULL on failure
+ */
+WOLFSSL_DH *wolfSSL_d2i_DHparams(WOLFSSL_DH **dh, const unsigned char **pp,
+                                                                    long length)
+{
+    WOLFSSL_ENTER("wolfSSL_d2i_DHparams");
+
+    WOLFSSL_DH *newDH = NULL;
+    int ret;
+    word32 idx = 0;
+
+    if (pp == NULL || length <= 0) {
+        WOLFSSL_MSG("bad argument");
+        return NULL;
+    }
+
+    if ((newDH = wolfSSL_DH_new()) == NULL) {
+        WOLFSSL_MSG("wolfSSL_DH_new() failed");
+        return NULL;
+    }
+
+    ret = wc_DhKeyDecode(*pp, &idx, (DhKey*)newDH->internal, (word32)length);
+    if (ret != 0) {
+        WOLFSSL_MSG("DhKeyDecode() failed");
+        wolfSSL_DH_free(newDH);
+        return NULL;
+    }
+
+//    if (setDhExternal(newDH) != WOLFSSL_SUCCESS) {
+//        WOLFSSL_MSG("setDhExternal failed");
+//        wolfSSL_DH_free(newDH);
+//        return NULL;
+//    }
+
+    *pp += length;
+    if (dh != NULL){
+        *dh = newDH;
+    }
+
+    return newDH;
+}
+
+/* Converts internal WOLFSSL_DH structure to DER encoded DH.
+ *
+ * dh   : structure to copy DH parameters from.
+ * out  : DER buffer for DH parameters
+ *
+ * Returns size of DER on success and WOLFSSL_FAILURE if error
+ */
+int wolfSSL_i2d_DHparams(const WOLFSSL_DH *dh, unsigned char **out)
+{
+    WOLFSSL_ENTER("Enter wolfSSL_i2d_DHparams");
+    word32 len;
+    int ret = 0;
+
+    if (dh == NULL) {
+        WOLFSSL_MSG("Bad parameters");
+        return WOLFSSL_FAILURE;
+    }
+
+    /* Get total length */
+    len = 2 + mp_leading_bit((mp_int*)dh->p->internal) +
+              mp_unsigned_bin_size((mp_int*)dh->p->internal) +
+          2 + mp_leading_bit((mp_int*)dh->g->internal) +
+              mp_unsigned_bin_size((mp_int*)dh->g->internal);
+
+    /* Two bytes required for length if ASN.1 SEQ data greater than 127 bytes
+     * and less than 256 bytes.
+     */
+    len = ((len > 127) ? 2 : 1) + len;
+
+    if (out != NULL && *out != NULL) {
+//        ret = StoreDHparams(*out, &len, (mp_int*)dh->p->internal,
+//                                        (mp_int*)dh->g->internal);
+        if (ret != MP_OKAY) {
+            WOLFSSL_MSG("StoreDHparams error");
+            len = 0;
+        }
+        else{
+            *out += len;
+        }
+    }
+    return (int)len;
+}
+#endif /* !NO_DH */
+
 #endif /* OPENSSL_ALL */
 
 #endif /* OPENSSL_EXTRA */
@@ -25402,19 +25695,31 @@ const char* wolfSSL_state_string_long(const WOLFSSL* ssl)
         return OUTPUT_STR[state][protocol][cbmode];
 }
 
-#ifndef NO_WOLFSSL_STUB
+/*
+ * Sets default PEM callback password if null is passed into
+ * the callback parameter of a PEM_read_bio_* function.
+ *
+ * Returns callback phrase size on success or WOLFSSL_FAILURE otherwise.
+ */
 int wolfSSL_PEM_def_callback(char* name, int num, int w, void* key)
 {
-    (void)name;
-    (void)num;
+    int sz;
     (void)w;
-    (void)key;
-    WOLFSSL_STUB("PEM_def_callback");
-    return 0;
-}
-#endif
+    WOLFSSL_ENTER("wolfSSL_PEM_def_callback");
 
-#endif
+    /* We assume that the user passes a default password as userdata */
+    if (key) {
+        sz = (int)XSTRLEN((const char*)key);
+        sz = (sz > num) ? num : sz;
+        XMEMCPY(name, key, sz);
+        return sz;
+    } else {
+        WOLFSSL_MSG("Error, default password cannot be created.");
+        return WOLFSSL_FAILURE;
+    }
+}
+
+#endif /* OPENSSL_EXTRA */
 
 #if defined(OPENSSL_EXTRA) || defined(HAVE_WEBSERVER)
 static long wolf_set_options(long old_op, long op)
@@ -25465,6 +25770,10 @@ static long wolf_set_options(long old_op, long op)
 
     if ((op & SSL_OP_NO_SSLv3) == SSL_OP_NO_SSLv3) {
         WOLFSSL_MSG("\tSSL_OP_NO_SSLv3");
+    }
+
+    if ((op & SSL_OP_CIPHER_SERVER_PREFERENCE) == SSL_OP_CIPHER_SERVER_PREFERENCE) {
+        WOLFSSL_MSG("\tSSL_OP_CIPHER_SERVER_PREFERENCE");
     }
 
     if ((op & SSL_OP_NO_COMPRESSION) == SSL_OP_NO_COMPRESSION) {
@@ -25839,6 +26148,19 @@ int wolfSSL_X509_PUBKEY_get0_param(WOLFSSL_ASN1_OBJECT **ppkalg,
     return WOLFSSL_SUCCESS;
 
 }
+
+/* Returns a pointer to the pkey when passed a key */
+WOLFSSL_EVP_PKEY* wolfSSL_X509_PUBKEY_get(WOLFSSL_X509_PUBKEY* key)
+{
+    WOLFSSL_ENTER("wolfSSL_X509_PUBKEY_get");
+    if(key == NULL || key->pkey == NULL){
+        WOLFSSL_LEAVE("wolfSSL_X509_PUBKEY_get", BAD_FUNC_ARG);
+        return NULL;
+    }
+    WOLFSSL_LEAVE("wolfSSL_X509_PUBKEY_get", WOLFSSL_SUCCESS);
+    return key->pkey;
+}
+
 #endif /* OPENSSL_ALL || WOLFSSL_APACHE_HTTPD || WOLFSSL_HAPROXY*/
 
 #ifndef NO_WOLFSSL_STUB
@@ -27284,6 +27606,42 @@ void wolfSSL_sk_GENERIC_pop_free(WOLFSSL_STACK* sk,
     XFREE(sk, NULL, DYNAMIC_TYPE_ASN1);
 }
 
+/* return 1 on success 0 on fail */
+int wolfSSL_sk_GENERIC_push(WOLFSSL_STACK* sk, void* generic)
+{
+    WOLFSSL_STACK* node;
+
+    WOLFSSL_ENTER("wolfSSL_sk_CIPHER_push");
+
+    if (sk == NULL || generic == NULL) {
+        return WOLFSSL_FAILURE;
+    }
+
+    /* no previous values in stack */
+    if (sk->data.generic == NULL) {
+        sk->data.generic = generic;
+        sk->num += 1;
+        return WOLFSSL_SUCCESS;
+    }
+
+    /* stack already has value(s) create a new node and add more */
+    node = (WOLFSSL_STACK*)XMALLOC(sizeof(WOLFSSL_STACK),NULL,DYNAMIC_TYPE_SSL);
+    if (node == NULL) {
+        WOLFSSL_MSG("Memory error");
+        return WOLFSSL_FAILURE;
+    }
+    XMEMSET(node, 0, sizeof(WOLFSSL_STACK));
+
+    /* push new node onto head of stack */
+    node->type         = sk->type;
+    node->data.generic = sk->data.generic;
+    node->next         = sk->next;
+    sk->next           = node;
+    sk->data.generic   = generic;
+    sk->num           += 1;
+
+    return WOLFSSL_SUCCESS;
+}
 void wolfSSL_sk_GENERIC_free(WOLFSSL_STACK* sk)
 {
     wolfSSL_sk_GENERIC_pop_free(sk, NULL);
