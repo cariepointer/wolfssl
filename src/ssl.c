@@ -19785,11 +19785,11 @@ WOLFSSL_DH *wolfSSL_d2i_DHparams(WOLFSSL_DH **dh, const unsigned char **pp,
         return NULL;
     }
 
-//    if (setDhExternal(newDH) != WOLFSSL_SUCCESS) {
-//        WOLFSSL_MSG("setDhExternal failed");
-//        wolfSSL_DH_free(newDH);
-//        return NULL;
-//    }
+    if (SetDhExternal(newDH) != WOLFSSL_SUCCESS) {
+        WOLFSSL_MSG("SetDhExternal failed");
+        wolfSSL_DH_free(newDH);
+        return NULL;
+    }
 
     *pp += length;
     if (dh != NULL){
@@ -28979,12 +28979,24 @@ static int SetDhInternal(WOLFSSL_DH* dh)
     int            ret = WOLFSSL_FATAL_ERROR;
     int            pSz = 1024;
     int            gSz = 1024;
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    int            privSz = 256; /* Up to 2048-bit */
+    int            pubSz  = 256;
+#endif
 #ifdef WOLFSSL_SMALL_STACK
     unsigned char* p   = NULL;
     unsigned char* g   = NULL;
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        unsigned char* priv_key = NULL;
+        unsigned char* pub_key = NULL;
+    #endif
 #else
     unsigned char  p[1024];
     unsigned char  g[1024];
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        unsigned char priv_key[256];
+        unsigned char pub_key[256];
+    #endif
 #endif
 
     WOLFSSL_ENTER("SetDhInternal");
@@ -28995,17 +29007,46 @@ static int SetDhInternal(WOLFSSL_DH* dh)
         WOLFSSL_MSG("Bad p internal size");
     else if (wolfSSL_BN_bn2bin(dh->g, NULL) > gSz)
         WOLFSSL_MSG("Bad g internal size");
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    else if (wolfSSL_BN_bn2bin(dh->priv_key, NULL) > privSz)
+        WOLFSSL_MSG("Bad private key internal size");
+    else if (wolfSSL_BN_bn2bin(dh->pub_key, NULL) > privSz)
+        WOLFSSL_MSG("Bad public key internal size");
+    #endif
     else {
     #ifdef WOLFSSL_SMALL_STACK
         p = (unsigned char*)XMALLOC(pSz, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
         g = (unsigned char*)XMALLOC(gSz, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
+
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        priv_key = (unsigned char*)XMALLOC(privSz,NULL,DYNAMIC_TYPE_PRIVATE_KEY);
+        pub_key  = (unsigned char*)XMALLOC(pubSz,NULL,DYNAMIC_TYPE_PUBLIC_KEY);
+    #endif
 
         if (p == NULL || g == NULL) {
             XFREE(p, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
             XFREE(g, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
             return ret;
         }
-    #endif
+    #endif /* WOLFSSL_SMALL_STACK */
+
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+        privSz = wolfSSL_BN_bn2bin(dh->priv_key, priv_key);
+        pubSz  = wolfSSL_BN_bn2bin(dh->pub_key,  pub_key);
+        if (privSz <= 0) {
+            WOLFSSL_MSG("No private key size.");
+        }
+        if (pubSz <= 0) {
+            WOLFSSL_MSG("No public key size.");
+        }
+        if (privSz > 0 || pubSz > 0) {
+//            ret = wc_DhSetFullKeys((DhKey*)dh->internal,priv_key,privSz,
+//                                    pub_key,pubSz);
+//            if (ret == WOLFSSL_FAILURE) {
+//                WOLFSSL_MSG("Failed setting private or public key.");
+//            }
+        }
+    #endif /* WOLFSSL_QT || OPENSSL_ALL */
 
         pSz = wolfSSL_BN_bn2bin(dh->p, p);
         gSz = wolfSSL_BN_bn2bin(dh->g, g);
@@ -29022,11 +29063,53 @@ static int SetDhInternal(WOLFSSL_DH* dh)
     #ifdef WOLFSSL_SMALL_STACK
         XFREE(p, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
         XFREE(g, NULL, DYNAMIC_TYPE_PUBLIC_KEY);
+        #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+            XFREE(priv_key, NULL, DYNAMIC_TYPE_PRIVATE_KEY);
+            XFREE(pub_key,  NULL, DYNAMIC_TYPE_PUBLIC_KEY);
+        #endif
     #endif
     }
 
 
     return ret;
+}
+
+/* Set the members of DhKey into WOLFSSL_DH
+ * DhKey was populated from wc_DhKeyDecode
+ */
+int SetDhExternal(WOLFSSL_DH *dh) {
+    DhKey *key;
+    WOLFSSL_MSG("Entering setDhExternal");
+
+    if (dh == NULL || dh->internal == NULL) {
+        WOLFSSL_MSG("dh key NULL error");
+    }
+
+    key = (DhKey*)dh->internal;
+
+    if (SetIndividualExternal(&dh->p, &key->p) != WOLFSSL_SUCCESS) {
+        WOLFSSL_MSG("dh param p error");
+        return WOLFSSL_FATAL_ERROR;
+    }
+
+    if (SetIndividualExternal(&dh->g, &key->g) != WOLFSSL_SUCCESS) {
+        WOLFSSL_MSG("dh param g error");
+        return WOLFSSL_FATAL_ERROR;
+    }
+
+    if (SetIndividualExternal(&dh->priv_key, &key->priv) != WOLFSSL_SUCCESS) {
+        WOLFSSL_MSG("No DH Private Key");
+        return WOLFSSL_FATAL_ERROR;
+    }
+
+    if (SetIndividualExternal(&dh->pub_key, &key->pub) != WOLFSSL_SUCCESS) {
+        WOLFSSL_MSG("No DH Public Key");
+        return WOLFSSL_FATAL_ERROR;
+    }
+
+    dh->exSet = 1;
+
+    return WOLFSSL_SUCCESS;
 }
 
 /* return code compliant with OpenSSL :
@@ -31015,19 +31098,79 @@ WOLFSSL_RSA* wolfSSL_EVP_PKEY_get1_RSA(WOLFSSL_EVP_PKEY* key)
  */
 int wolfSSL_EVP_PKEY_set1_RSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_RSA *key)
 {
-    if((pkey == NULL) || (key ==NULL))return WOLFSSL_FAILURE;
+#if defined(WOLFSSL_KEY_GEN) && !defined(HAVE_USER_RSA)
+    int derMax = 0;
+    int derSz  = 0;
+    byte* derBuf = NULL;
+    RsaKey* rsa  = NULL;
+#endif
     WOLFSSL_ENTER("wolfSSL_EVP_PKEY_set1_RSA");
+    if ((pkey == NULL) || (key == NULL))
+        return WOLFSSL_FAILURE;
+
     if (pkey->rsa != NULL && pkey->ownRsa == 1) {
         wolfSSL_RSA_free(pkey->rsa);
     }
     pkey->rsa    = key;
     pkey->ownRsa = 0; /* pkey does not own RSA */
-    pkey->type = EVP_PKEY_RSA;
+    pkey->type   = EVP_PKEY_RSA;
+    if (key->inSet == 0) {
+        WOLFSSL_MSG("No RSA internal set, do it");
+
+        if (SetRsaInternal(key) != WOLFSSL_SUCCESS) {
+            WOLFSSL_MSG("SetRsaInternal failed");
+            return WOLFSSL_FAILURE;
+        }
+    }
+
+#if defined(WOLFSSL_KEY_GEN) && !defined(HAVE_USER_RSA)
+    rsa = (RsaKey*)key->internal;
+    /* 5 > size of n, d, p, q, d%(p-1), d(q-1), 1/q%p, e + ASN.1 additional
+     * information */
+    derMax = 5 * wolfSSL_RSA_size(key) + (2 * AES_BLOCK_SIZE);
+
+    derBuf = (byte*)XMALLOC(derMax, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+    if (derBuf == NULL) {
+        WOLFSSL_MSG("malloc failed");
+        return WOLFSSL_FAILURE;
+    }
+
+    if (rsa->type == RSA_PRIVATE) {
+        /* Private key to DER */
+        derSz = wc_RsaKeyToDer(rsa, derBuf, derMax);
+    }
+    else {
+        /* Public key to DER */
+        derSz = wc_RsaKeyToPublicDer(rsa, derBuf, derMax);
+    }
+
+    if (derSz < 0) {
+        if (rsa->type == RSA_PRIVATE) {
+            WOLFSSL_MSG("wc_RsaKeyToDer failed");
+        }
+        else {
+            WOLFSSL_MSG("wc_RsaKeyToPublicDer failed");
+        }
+        XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+        return WOLFSSL_FAILURE;
+    }
+
+    pkey->pkey.ptr = (char*)XMALLOC(derSz, pkey->heap, DYNAMIC_TYPE_DER);
+    if (pkey->pkey.ptr == NULL) {
+        WOLFSSL_MSG("key malloc failed");
+        XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+        return WOLFSSL_FAILURE;
+    }
+    pkey->pkey_sz = derSz;
+    XMEMCPY(pkey->pkey.ptr, derBuf, derSz);
+    XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+#endif /* WOLFSSL_KEY_GEN && !HAVE_USER_RSA */
+
 #ifdef WC_RSA_BLINDING
     if (key->ownRng == 0) {
         if (wc_RsaSetRNG((RsaKey*)(pkey->rsa->internal), &(pkey->rng)) != 0) {
             WOLFSSL_MSG("Error setting RSA rng");
-            return SSL_FAILURE;
+            return WOLFSSL_FAILURE;
         }
     }
 #endif
@@ -31035,15 +31178,116 @@ int wolfSSL_EVP_PKEY_set1_RSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_RSA *key)
 }
 #endif /* !NO_RSA */
 
-#ifndef NO_WOLFSSL_STUB
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+#ifndef NO_DSA
+/* with set1 functions the pkey struct does not own the DSA structure
+ *
+ * returns WOLFSSL_SUCCESS on success and WOLFSSL_FAILURE on failure
+ */
+int wolfSSL_EVP_PKEY_set1_DSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DSA *key)
+{
+    int derMax = 0;
+    int derSz  = 0;
+    DsaKey* dsa  = NULL;
+    byte* derBuf = NULL;
+
+    WOLFSSL_ENTER("wolfSSL_EVP_PKEY_set1_DSA");
+
+    if((pkey == NULL) || (key == NULL))return WOLFSSL_FAILURE;
+    if (pkey->dsa != NULL && pkey->ownDsa == 1) {
+        wolfSSL_DSA_free(pkey->dsa);
+    }
+    pkey->dsa    = key;
+    pkey->ownDsa = 0; /* pkey does not own DSA */
+    pkey->type   = EVP_PKEY_DSA;
+    if (key->inSet == 0) {
+        WOLFSSL_MSG("No DSA internal set, do it");
+        if (SetDsaInternal(key) != WOLFSSL_SUCCESS) {
+            WOLFSSL_MSG("SetDsaInternal failed");
+            return WOLFSSL_FAILURE;
+        }
+    }
+    dsa = (DsaKey*)key->internal;
+
+    /* 4 > size of pub, priv, p, q, g + ASN.1 additional information */
+    derMax = 4 * wolfSSL_BN_num_bytes(key->g) + AES_BLOCK_SIZE;
+
+    derBuf = (byte*)XMALLOC(derMax, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+    if (derBuf == NULL) {
+        WOLFSSL_MSG("malloc failed");
+        return WOLFSSL_FAILURE;
+    }
+
+    if (dsa->type == DSA_PRIVATE) {
+        /* Private key to DER */
+        derSz = wc_DsaKeyToDer(dsa, derBuf, derMax);
+    }
+    else {
+        /* Public key to DER */
+//        derSz = wc_DsaKeyToPublicDer(dsa, derBuf, derMax);
+    }
+
+    if (derSz < 0) {
+        if (dsa->type == DSA_PRIVATE) {
+            WOLFSSL_MSG("wc_DsaKeyToDer failed");
+        }
+        else {
+            WOLFSSL_MSG("wc_DsaKeyToPublicDer failed");
+        }
+        XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+        return WOLFSSL_FAILURE;
+    }
+
+    pkey->pkey.ptr = (char*)XMALLOC(derSz, pkey->heap, DYNAMIC_TYPE_DER);
+    if (pkey->pkey.ptr == NULL) {
+        WOLFSSL_MSG("key malloc failed");
+        XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+        return WOLFSSL_FAILURE;
+    }
+    pkey->pkey_sz = derSz;
+    XMEMCPY(pkey->pkey.ptr, derBuf, derSz);
+    XFREE(derBuf, pkey->heap, DYNAMIC_TYPE_TMP_BUFFER);
+
+    return WOLFSSL_SUCCESS;
+}
+
 WOLFSSL_DSA* wolfSSL_EVP_PKEY_get1_DSA(WOLFSSL_EVP_PKEY* key)
 {
-    (void)key;
-    WOLFSSL_MSG("wolfSSL_EVP_PKEY_get1_DSA not implemented");
-    WOLFSSL_STUB("EVP_PKEY_get1_DSA");
-    return NULL;
+    WOLFSSL_DSA* local;
+
+    WOLFSSL_ENTER("wolfSSL_EVP_PKEY_get1_DSA");
+
+    if (key == NULL) {
+        WOLFSSL_MSG("Bad function argument");
+        return NULL;
+    }
+
+    local = wolfSSL_DSA_new();
+    if (local == NULL) {
+        WOLFSSL_MSG("Error creating a new WOLFSSL_DSA structure");
+        return NULL;
+    }
+
+    if (key->type == EVP_PKEY_DSA) {
+        if (wolfSSL_DSA_LoadDer(local, (const unsigned char*)key->pkey.ptr,
+                    key->pkey_sz) != SSL_SUCCESS) {
+            /* now try public key */
+            if (wolfSSL_DSA_LoadDer_ex(local,
+                        (const unsigned char*)key->pkey.ptr, key->pkey_sz,
+                        WOLFSSL_DSA_LOAD_PUBLIC) != SSL_SUCCESS) {
+                wolfSSL_DSA_free(local);
+                local = NULL;
+            }
+        }
+    }
+    else {
+        WOLFSSL_MSG("WOLFSSL_EVP_PKEY does not hold an DSA key");
+        wolfSSL_DSA_free(local);
+        local = NULL;
+    }
+    return local;
 }
-#endif
+#endif /* !NO_DSA */
 
 WOLFSSL_EC_KEY *wolfSSL_EVP_PKEY_get0_EC_KEY(WOLFSSL_EVP_PKEY *pkey)
 {
@@ -31068,6 +31312,9 @@ WOLFSSL_EC_KEY *wolfSSL_EVP_PKEY_get1_EC_KEY(WOLFSSL_EVP_PKEY* pkey)
     }
     return eckey;
 }
+
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
+
 
 void* wolfSSL_EVP_X_STATE(const WOLFSSL_EVP_CIPHER_CTX* ctx)
 {
