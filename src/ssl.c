@@ -32614,8 +32614,15 @@ WOLFSSL_EC_GROUP *wolfSSL_EC_GROUP_new_by_curve_name(int nid)
 {
     WOLFSSL_EC_GROUP *g;
     int x;
+    int eccEnum;
 
     WOLFSSL_ENTER("wolfSSL_EC_GROUP_new_by_curve_name");
+
+    /* If NID passed in is OpenSSL type, convert it to ecc_curve_id enum */
+    eccEnum = NIDToEccEnum(nid);
+    if (eccEnum == -1)
+        eccEnum = nid;
+
 
     /* curve group */
     g = (WOLFSSL_EC_GROUP*) XMALLOC(sizeof(WOLFSSL_EC_GROUP), NULL,
@@ -32627,7 +32634,7 @@ WOLFSSL_EC_GROUP *wolfSSL_EC_GROUP_new_by_curve_name(int nid)
     XMEMSET(g, 0, sizeof(WOLFSSL_EC_GROUP));
 
     /* set the nid of the curve */
-    g->curve_nid = nid;
+    g->curve_nid = eccEnum;
 
     /* search and set the corresponding internal curve idx */
     for (x = 0; ecc_sets[x].size != 0; x++)
@@ -32660,6 +32667,9 @@ int wolfSSL_EC_GROUP_get_curve_name(const WOLFSSL_EC_GROUP *group)
  */
 int wolfSSL_EC_GROUP_get_degree(const WOLFSSL_EC_GROUP *group)
 {
+    int nid;
+    int tmp;
+
     WOLFSSL_ENTER("wolfSSL_EC_GROUP_get_degree");
 
     if (group == NULL || group->curve_idx < 0) {
@@ -32667,7 +32677,17 @@ int wolfSSL_EC_GROUP_get_degree(const WOLFSSL_EC_GROUP *group)
         return WOLFSSL_FAILURE;
     }
 
-    switch(group->curve_nid) {
+    /* If curve_nid passed in is an ecc_curve_id enum, convert it to the
+        corresponding OpenSSL NID */
+    tmp = EccEnumToNID(group->curve_nid);
+    if (tmp != -1){
+        nid = tmp;
+    }
+    else{
+        nid = group->curve_nid;
+    }
+
+    switch(nid) {
         case NID_secp112r1:
         case NID_secp112r2:
             return 112;
@@ -32697,10 +32717,78 @@ int wolfSSL_EC_GROUP_get_degree(const WOLFSSL_EC_GROUP *group)
         case NID_brainpoolP384r1:
             return 384;
         case NID_secp521r1:
-        case NID_brainpoolP512r1:
             return 521;
+        case NID_brainpoolP512r1:
+            return 512;
         default:
             return WOLFSSL_FAILURE;
+    }
+}
+
+/* Converts OpenSSL NID value of ECC curves to the associated enum values in
+   ecc_curve_id, used by ecc_sets[].*/
+int NIDToEccEnum(int n)
+{
+    WOLFSSL_ENTER("NIDToEccEnum()");
+
+    switch(n) {
+        case NID_X9_62_prime192v1:
+            return ECC_SECP192R1;
+        case NID_X9_62_prime192v2:
+            return ECC_PRIME192V2;
+        case NID_X9_62_prime192v3:
+            return ECC_PRIME192V3;
+        case NID_X9_62_prime239v1:
+            return ECC_PRIME239V1;
+        case NID_X9_62_prime239v2:
+            return ECC_PRIME239V2;
+        case NID_X9_62_prime239v3:
+            return ECC_PRIME239V3;
+        case NID_X9_62_prime256v1:
+            return ECC_SECP256R1;
+        case NID_secp112r1:
+            return ECC_SECP112R1;
+        case NID_secp112r2:
+            return ECC_SECP112R2;
+        case NID_secp128r1:
+            return ECC_SECP128R1;
+        case NID_secp128r2:
+            return ECC_SECP128R2;
+        case NID_secp160r1:
+            return ECC_SECP160R1;
+        case NID_secp160r2:
+            return ECC_SECP160R2;
+        case NID_secp224r1:
+            return ECC_SECP224R1;
+        case NID_secp384r1:
+            return ECC_SECP384R1;
+        case NID_secp521r1:
+            return ECC_SECP521R1;
+        case NID_secp160k1:
+            return ECC_SECP160K1;
+        case NID_secp192k1:
+            return ECC_SECP192K1;
+        case NID_secp224k1:
+            return ECC_SECP224K1;
+        case NID_secp256k1:
+            return ECC_SECP256K1;
+        case NID_brainpoolP160r1:
+            return ECC_BRAINPOOLP160R1;
+        case NID_brainpoolP192r1:
+            return ECC_BRAINPOOLP192R1;
+        case NID_brainpoolP224r1:
+            return ECC_BRAINPOOLP224R1;
+        case NID_brainpoolP256r1:
+            return ECC_BRAINPOOLP256R1;
+        case NID_brainpoolP320r1:
+            return ECC_BRAINPOOLP320R1;
+        case NID_brainpoolP384r1:
+            return ECC_BRAINPOOLP384R1;
+        case NID_brainpoolP512r1:
+            return ECC_BRAINPOOLP512R1;
+        default:
+            WOLFSSL_MSG("NID not found");
+            return -1;
     }
 }
 
@@ -33335,6 +33423,74 @@ int wolfSSL_PEM_write_EC_PUBKEY(XFILE fp, WOLFSSL_EC_KEY *x)
 }
 #endif
 
+/* Uses the same format of input as wolfSSL_PEM_read_bio_PrivateKey but expects
+ * the results to be an EC key.
+ *
+ * bio  structure to read EC private key from
+ * ec   if not null is then set to the result
+ * cb   password callback for reading PEM
+ * pass password string
+ *
+ * returns a pointer to a new WOLFSSL_EC_KEY struct on success and NULL on fail
+ */
+
+WOLFSSL_EC_KEY* wolfSSL_PEM_read_bio_EC_PUBKEY(WOLFSSL_BIO* bio,
+                                               WOLFSSL_EC_KEY** ec,
+                                               pem_password_cb* cb, void *pass)
+{
+    WOLFSSL_EVP_PKEY* pkey;
+    WOLFSSL_EC_KEY* local;
+
+    WOLFSSL_ENTER("wolfSSL_PEM_read_bio_EC_PUBKEY");
+
+    pkey = wolfSSL_PEM_read_bio_PUBKEY(bio, NULL, cb, pass);
+    if (pkey == NULL) {
+        return NULL;
+    }
+
+    /* Since the WOLFSSL_EC_KEY structure is being taken from WOLFSSL_EVP_PKEY the
+     * flag indicating that the WOLFSSL_EC_KEY structure is owned should be FALSE
+     * to avoid having it free'd */
+    pkey->ownEcc = 0;
+    local = pkey->ecc;
+    if (ec != NULL) {
+        *ec = local;
+    }
+
+    wolfSSL_EVP_PKEY_free(pkey);
+    return local;
+}
+
+/* Reads a private EC key from a WOLFSSL_BIO into a WOLFSSL_EC_KEY.
+ * Returns WOLFSSL_SUCCESS or WOLFSSL_FAILURE
+ */
+WOLFSSL_EC_KEY* wolfSSL_PEM_read_bio_ECPrivateKey(WOLFSSL_BIO* bio,
+                                                  WOLFSSL_EC_KEY** ec,
+                                                  pem_password_cb* cb,
+                                                  void *pass)
+{
+    WOLFSSL_EVP_PKEY* pkey;
+    WOLFSSL_EC_KEY* local;
+
+    WOLFSSL_ENTER("wolfSSL_PEM_read_bio_ECPrivateKey");
+
+    pkey = wolfSSL_PEM_read_bio_PrivateKey(bio, NULL, cb, pass);
+    if (pkey == NULL) {
+        return NULL;
+    }
+
+    /* Since the WOLFSSL_EC_KEY structure is being taken from WOLFSSL_EVP_PKEY the
+     * flag indicating that the WOLFSSL_EC_KEY structure is owned should be FALSE
+     * to avoid having it free'd */
+    pkey->ownEcc = 0;
+    local = pkey->ecc;
+    if (ec != NULL) {
+        *ec = local;
+    }
+
+    wolfSSL_EVP_PKEY_free(pkey);
+    return local;
+}
 #endif /* NO_FILESYSTEM */
 
 #if defined(WOLFSSL_KEY_GEN)
