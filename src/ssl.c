@@ -21476,11 +21476,11 @@ char* wolfSSL_CIPHER_description(const WOLFSSL_CIPHER* cipher, char* in,
     /* if cipher is in the stack from wolfSSL_get_ciphers_compat then
      * Return the description based on cipher_names[cipher->offset]
      */
-    if (cipher->in_stack == TRUE) {
-        wolfSSL_sk_CIPHER_description((WOLFSSL_CIPHER*)cipher);
-        XSTRNCPY(in,cipher->description,len);
-        return ret;
-    }
+//    if (cipher->in_stack == TRUE) {
+//        wolfSSL_sk_CIPHER_description((WOLFSSL_CIPHER*)cipher);
+//        XSTRNCPY(in,cipher->description,len);
+//        return ret;
+//    }
 #endif
 
     /* Get the cipher description based on the SSL session cipher */
@@ -23226,7 +23226,8 @@ int wolfSSL_X509_verify_cert(WOLFSSL_X509_STORE_CTX* ctx)
         if (error != 0 ) {
             wolfSSL_X509_STORE_CTX_set_error(ctx, error);
             wolfSSL_X509_STORE_CTX_set_error_depth(ctx, depth);
-            ctx->store->verify_cb(0, ctx);
+            if (ctx->store && ctx->store->verify_cb)
+                ctx->store->verify_cb(0, ctx);
         }
 #endif /* OPENSSL_ALL || WOLFSSL_QT */
         return ret;
@@ -23985,11 +23986,22 @@ WOLFSSL_ASN1_INTEGER* wolfSSL_X509_get_serialNumber(WOLFSSL_X509* x509)
         }
         a->dataMax   = x509->serialSz + 2;
         a->isDynamic = 1;
+    } else {
+        /* Use array instead of dynamic memory */
+        a->data    = a->intData;
+        a->dataMax = WOLFSSL_ASN1_INTEGER_MAX;
     }
 
-    a->data[i++] = ASN_INTEGER;
-    i += SetLength(x509->serialSz, a->data + i);
-    XMEMCPY(&a->data[i], x509->serial, x509->serialSz);
+    #ifdef WOLFSSL_QT
+        XMEMCPY(&a->data[i], x509->serial, x509->serialSz);
+        a->length = x509->serialSz;
+        /* Store internally. Free'd when x509 is */
+        x509->serialNumber = a;
+    #else
+        a->data[i++] = ASN_INTEGER;
+        i += SetLength(x509->serialSz, a->data + i);
+        XMEMCPY(&a->data[i], x509->serial, x509->serialSz);
+    #endif
 
     x509->serialNumber = a;
 
@@ -24055,6 +24067,15 @@ char* wolfSSL_ASN1_TIME_to_string(WOLFSSL_ASN1_TIME* t, char* buf, int len)
 #ifdef OPENSSL_EXTRA
 
 #if !defined(NO_ASN_TIME) && !defined(USER_TIME) && !defined(TIME_OVERRIDES)
+
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL) && !defined(NO_WOLFSSL_STUB)
+void wolfSSL_ASN1_TIME_free(WOLFSSL_ASN1_TIME* t)
+{
+    (void) t;
+    WOLFSSL_STUB("wolfSSL_ASN1_TIME_free");
+    return;
+}
+#endif /* NO_WOLFSSL_STUB && WOLFSSL_QT || OPENSSL_ALL */
 
 WOLFSSL_ASN1_TIME* wolfSSL_ASN1_TIME_adj(WOLFSSL_ASN1_TIME *s, time_t t,
                                     int offset_day, long offset_sec)
@@ -24252,6 +24273,16 @@ void wolfSSL_X509_STORE_CTX_set_error(WOLFSSL_X509_STORE_CTX* ctx, int er)
     }
 }
 
+/* Set the error depth in the X509 STORE CTX */
+void wolfSSL_X509_STORE_CTX_set_error_depth(WOLFSSL_X509_STORE_CTX* ctx,
+                                                                      int depth)
+{
+    WOLFSSL_ENTER("wolfSSL_X509_STORE_CTX_set_error_depth");
+
+    if (ctx != NULL) {
+        ctx->error_depth = depth;
+    }
+}
 
 /* Sets a function callback that will send information about the state of all
  * WOLFSSL objects that have been created by the WOLFSSL_CTX structure passed
