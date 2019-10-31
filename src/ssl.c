@@ -24404,8 +24404,6 @@ WOLFSSL_ASN1_INTEGER* wolfSSL_X509_get_serialNumber(WOLFSSL_X509* x509)
     #ifdef WOLFSSL_QT
         XMEMCPY(&a->data[i], x509->serial, x509->serialSz);
         a->length = x509->serialSz;
-        /* Store internally. Free'd when x509 is */
-        x509->serialNumber = a;
     #else
         a->data[i++] = ASN_INTEGER;
         i += SetLength(x509->serialSz, a->data + i);
@@ -42604,10 +42602,19 @@ WOLFSSL_BIGNUM *wolfSSL_ASN1_INTEGER_to_BN(const WOLFSSL_ASN1_INTEGER *ai,
         return NULL;
     }
 
-    if ((ret = GetInt(&mpi, ai->data, &idx, ai->dataMax)) != 0) {
+    ret = GetInt(&mpi, ai->data, &idx, ai->dataMax);
+    if (ret != 0) {
+    #ifdef WOLFSSL_QT
+        /* Serial number in QT starts at index 0 of data */
+        if (mp_read_unsigned_bin(&mpi, (byte*)ai->data, ai->length) != 0) {
+                mp_clear(&mpi);
+                return NULL;
+            }
+    #else
         /* expecting ASN1 format for INTEGER */
         WOLFSSL_LEAVE("wolfSSL_ASN1_INTEGER_to_BN", ret);
         return NULL;
+    #endif
     }
 
     /* mp_clear needs called because mpi is copied and causes memory leak with
