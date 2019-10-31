@@ -59,6 +59,10 @@ typedef struct DhParams {
 /* Diffie-Hellman Key */
 struct DhKey {
     mp_int p, g, q;                         /* group parameters  */
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    mp_int pub;
+    mp_int priv;
+#endif
     void* heap;
 #ifdef WOLFSSL_ASYNC_CRYPT
     WC_ASYNC_DEV asyncDev;
