@@ -83,6 +83,7 @@ WOLFSSL_API int wolfSSL_BN_is_zero(const WOLFSSL_BIGNUM*);
 WOLFSSL_API int wolfSSL_BN_is_one(const WOLFSSL_BIGNUM*);
 WOLFSSL_API int wolfSSL_BN_is_odd(const WOLFSSL_BIGNUM*);
 WOLFSSL_API int wolfSSL_BN_is_negative(const WOLFSSL_BIGNUM*);
+WOLFSSL_API int wolfSSL_BN_is_word(const WOLFSSL_BIGNUM*, WOLFSSL_BN_ULONG);
 
 WOLFSSL_API int wolfSSL_BN_cmp(const WOLFSSL_BIGNUM*, const WOLFSSL_BIGNUM*);
 
@@ -147,6 +148,7 @@ typedef WOLFSSL_BN_GENCB BN_GENCB;
 #define BN_is_one   wolfSSL_BN_is_one
 #define BN_is_odd   wolfSSL_BN_is_odd
 #define BN_is_negative wolfSSL_BN_is_negative
+#define BN_is_word  wolfSSL_BN_is_word
 
 #define BN_cmp    wolfSSL_BN_cmp
 

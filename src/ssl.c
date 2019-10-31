@@ -42772,6 +42772,24 @@ int wolfSSL_BN_is_odd(const WOLFSSL_BIGNUM* bn)
 }
 
 /* return compliant with OpenSSL
+ *   1 if BIGNUM is word, 0 else */
+int wolfSSL_BN_is_word(const WOLFSSL_BIGNUM* bn, WOLFSSL_BN_ULONG w)
+{
+    WOLFSSL_ENTER("wolfSSL_BN_is_word");
+
+    if (bn == NULL || bn->internal == NULL) {
+        WOLFSSL_MSG("bn NULL error");
+        return WOLFSSL_FAILURE;
+    }
+
+    if (mp_isword((mp_int*)bn->internal, w) == MP_YES) {
+         return WOLFSSL_SUCCESS;
+    }
+
+    return WOLFSSL_FAILURE;
+}
+
+/* return compliant with OpenSSL
  *   -1 if a < b, 0 if a == b and 1 if a > b
  */
 int wolfSSL_BN_cmp(const WOLFSSL_BIGNUM* a, const WOLFSSL_BIGNUM* b)
