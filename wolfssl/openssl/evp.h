@@ -47,6 +47,7 @@
 #include <wolfssl/openssl/rsa.h>
 #include <wolfssl/openssl/dsa.h>
 #include <wolfssl/openssl/ec.h>
+#include <wolfssl/openssl/dh.h>
 
 #include <wolfssl/wolfcrypt/aes.h>
 #include <wolfssl/wolfcrypt/des3.h>
@@ -414,8 +415,12 @@ WOLFSSL_API int wolfSSL_EVP_PKEY_assign_EC_KEY(WOLFSSL_EVP_PKEY* pkey,
 WOLFSSL_API WOLFSSL_RSA* wolfSSL_EVP_PKEY_get1_RSA(WOLFSSL_EVP_PKEY*);
 WOLFSSL_API WOLFSSL_DSA* wolfSSL_EVP_PKEY_get1_DSA(WOLFSSL_EVP_PKEY*);
 WOLFSSL_API WOLFSSL_EC_KEY *wolfSSL_EVP_PKEY_get1_EC_KEY(WOLFSSL_EVP_PKEY *key);
+WOLFSSL_API WOLFSSL_DH* wolfSSL_EVP_PKEY_get1_DH(WOLFSSL_EVP_PKEY* key);
 WOLFSSL_API int wolfSSL_EVP_PKEY_set1_RSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_RSA *key);
 WOLFSSL_API int wolfSSL_EVP_PKEY_set1_DSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DSA *key);
+WOLFSSL_API int wolfSSL_EVP_PKEY_set1_DH(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DH *key);
+WOLFSSL_API int wolfSSL_EVP_PKEY_set1_EC_KEY(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_EC_KEY *key);
+WOLFSSL_API int wolfSSL_EVP_PKEY_assign(WOLFSSL_EVP_PKEY *pkey, int type, void *key);
 
 WOLFSSL_API WOLFSSL_EVP_PKEY* wolfSSL_EVP_PKEY_new_mac_key(int type, ENGINE* e,
                                           const unsigned char* key, int keylen);
@@ -630,14 +635,17 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define EVP_get_cipherbyname          wolfSSL_EVP_get_cipherbyname
 #define EVP_get_digestbyname          wolfSSL_EVP_get_digestbyname
 
+#define EVP_PKEY_assign                wolfSSL_EVP_PKEY_assign
 #define EVP_PKEY_assign_RSA            wolfSSL_EVP_PKEY_assign_RSA
 #define EVP_PKEY_assign_EC_KEY         wolfSSL_EVP_PKEY_assign_EC_KEY
 #define EVP_PKEY_get1_DSA              wolfSSL_EVP_PKEY_get1_DSA
-#define EVP_PKEY_get1_RSA              wolfSSL_EVP_PKEY_get1_RSA
-#define EVP_PKEY_get1_DSA              wolfSSL_EVP_PKEY_get1_DSA
-#define EVP_PKEY_set1_RSA              wolfSSL_EVP_PKEY_set1_RSA
 #define EVP_PKEY_set1_DSA              wolfSSL_EVP_PKEY_set1_DSA
+#define EVP_PKEY_get1_RSA              wolfSSL_EVP_PKEY_get1_RSA
+#define EVP_PKEY_set1_RSA              wolfSSL_EVP_PKEY_set1_RSA
+#define EVP_PKEY_set1_EC_KEY           wolfSSL_EVP_PKEY_set1_EC_KEY
 #define EVP_PKEY_get1_EC_KEY           wolfSSL_EVP_PKEY_get1_EC_KEY
+#define EVP_PKEY_set1_DH               wolfSSL_EVP_PKEY_set1_DH
+#define EVP_PKEY_get1_DH               wolfSSL_EVP_PKEY_get1_DH
 #define EVP_PKEY_get0_hmac             wolfSSL_EVP_PKEY_get0_hmac
 #define EVP_PKEY_new_mac_key           wolfSSL_EVP_PKEY_new_mac_key
 #define EVP_MD_CTX_copy                wolfSSL_EVP_MD_CTX_copy
