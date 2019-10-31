@@ -3112,6 +3112,9 @@ WOLFSSL_API int wolfSSL_OBJ_obj2txt(char *buf, int buf_len, WOLFSSL_ASN1_OBJECT 
 
 WOLFSSL_API void wolfSSL_OBJ_cleanup(void);
 WOLFSSL_API int wolfSSL_OBJ_create(const char *oid, const char *sn, const char *ln);
+#ifdef HAVE_ECC
+WOLFSSL_LOCAL int NIDToEccEnum(int n);
+#endif
 /* end of object functions */
 
 WOLFSSL_API unsigned long wolfSSL_ERR_peek_last_error_line(const char **file, int *line);
