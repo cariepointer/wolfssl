@@ -38312,25 +38312,78 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
     }
     #endif
 
-#ifdef HAVE_ECC
+    /* Return the corresponding short name for the nid <n>.
+     * or NULL if short name can't be found.
+     */
     const char * wolfSSL_OBJ_nid2sn(int n) {
-        int i;
+
         WOLFSSL_ENTER("wolfSSL_OBJ_nid2sn");
 
-        /* find based on NID and return name */
-        for (i = 0; i < ecc_sets[i].size; i++) {
-            if (n == ecc_sets[i].id) {
-                return ecc_sets[i].name;
+        switch(n)
+        {
+            case NID_commonName :
+                return "CN";
+            case NID_countryName :
+                return "C";
+            case NID_localityName :
+                return "L";
+            case NID_stateOrProvinceName :
+                return "ST";
+            case NID_organizationName :
+                return "O";
+            case NID_organizationalUnitName :
+                return "OU";
+            case NID_emailAddress :
+                return "emailAddress";
+            case NID_basic_constraints :
+                return "basicConstraints";
+            case NID_subject_key_identifier :
+                return "subjectKeyIdentifier";
+            case NID_authority_key_identifier :
+                return "authorityKeyIdentifier";
+            case NID_certificate_policies:
+                return "certificatePolicies";
+            case NID_key_usage :
+                return "keyUsage";
+            case NID_info_access :
+                return "authorityInfoAccess";
+            case NID_crl_distribution_points :
+                return "cRLDistributionPoints";
+            case EXT_KEY_USAGE_OID :
+                return "extKeyUsage";
+            case AIA_OCSP_OID:
+                return "OCSP";
+            case AIA_CA_ISSUER_OID:
+                return "caIssuers";
+            default :
+                break;
+        }
+
+        #ifdef HAVE_ECC
+        {
+            int eccEnum;
+            int i;
+            /* Convert OpenSSL NID to enum value in ecc_curve_id */
+            if ((eccEnum = NIDToEccEnum(n)) != -1) {
+                /* find sn based on NID and return name */
+                for (i = 0; i < ecc_sets[i].size; i++) {
+                    if (eccEnum == ecc_sets[i].id) {
+                        return ecc_sets[i].name;
+                    }
+                }
             }
         }
+        #endif /* HAVE_ECC */
+        WOLFSSL_MSG("SN not found");
         return NULL;
     }
 
-#endif /* HAVE_ECC */
 #if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
     int wolfSSL_OBJ_sn2nid(const char *sn) {
 
         WOLFSSL_ENTER("wolfSSL_OBJ_sn2nid");
+        if (sn == NULL)
+            return NID_undef;
         return wc_OBJ_sn2nid(sn);
     }
 #endif
@@ -38352,6 +38405,15 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
         if (o == NULL) {
             return -1;
         }
+
+        #ifdef WOLFSSL_QT
+        if (o->grp == oidCertExtType) {
+            /* If nid is an unknown extension, return NID_undef */
+            if (wolfSSL_OBJ_nid2sn(o->nid) == NULL)
+                return NID_undef;
+        }
+        #endif
+
         if (o->nid > 0)
             return o->nid;
         if (GetObjectId(o->obj, &idx, &oid, o->grp, o->objSz) < 0) {
@@ -38364,18 +38426,106 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
 
     /* Returns the long name that corresponds with an ASN1_OBJECT nid value.
      *  n : NID value of ASN1_OBJECT to search */
-    char * wolfSSL_OBJ_nid2ln(int n)
+    const char* wolfSSL_OBJ_nid2ln(int n)
     {
         int i;
         WOLFSSL_ENTER("wolfSSL_OBJ_nid2ln");
 
+        switch(n)
+        {
+            case NID_commonName :
+                return WOLFSSL_LN_COMMON_NAME;
+            case NID_countryName :
+                return WOLFSSL_LN_COUNTRY_NAME;
+            case NID_localityName :
+                return WOLFSSL_LN_LOCALITY_NAME;
+            case NID_stateOrProvinceName :
+                return WOLFSSL_LN_STATE_NAME;
+            case NID_organizationName :
+                return WOLFSSL_LN_ORG_NAME;
+            case NID_organizationalUnitName :
+                return WOLFSSL_LN_ORGUNIT_NAME;
+            case NID_emailAddress :
+                return WOLFSSL_EMAIL_ADDR;
+            default:
+                break;
+        }
+
+        #ifdef HAVE_ECC
+        {
+            int eccEnum;
+            /* Convert OpenSSL NID to enum value in ecc_curve_id */
+            if ((eccEnum = NIDToEccEnum(n)) != -1) {
+                /* find sn based on NID and return name */
+                for (i = 0; i < ecc_sets[i].size; i++) {
+                    if (eccEnum == ecc_sets[i].id) {
+                        return ecc_sets[i].name;
+                    }
+                }
+            }
+        }
+        #endif /* HAVE_ECC */
+
         for (i = 0; i < (int)WOLFSSL_OBJECT_INFO_SZ; i++) {
             if (wolfssl_object_info[i].nid == n)
-                return (char*)wolfssl_object_info[i].lName;
+                return wolfssl_object_info[i].lName;
         }
 
         WOLFSSL_MSG("NID not found in table");
         return NULL;
+    }
+
+    /* Return the corresponding NID for the long name <ln>
+     * or NID_undef if NID can't be found.
+     */
+    int wolfSSL_OBJ_ln2nid(const char *ln)
+    {
+        static const struct {
+            const char *ln;
+            int  nid;
+        } ln2nid[] = {
+            {WOLFSSL_LN_COMMON_NAME, NID_commonName},
+            {WOLFSSL_LN_COUNTRY_NAME, NID_countryName},
+            {WOLFSSL_LN_LOCALITY_NAME, NID_localityName},
+            {WOLFSSL_LN_STATE_NAME, NID_stateOrProvinceName},
+            {WOLFSSL_LN_ORG_NAME, NID_organizationName},
+            {WOLFSSL_LN_ORGUNIT_NAME, NID_organizationalUnitName},
+            {WOLFSSL_EMAIL_ADDR, NID_emailAddress},
+            {NULL, -1}};
+
+        int i;
+        WOLFSSL_ENTER("wolfSSL_OBJ_ln2nid");
+
+        if (ln == NULL) return BAD_FUNC_ARG;
+
+        /* Return certificate info ln */
+        for(i=0; ln2nid[i].ln != NULL; i++) {
+            if(XSTRNCMP(ln, ln2nid[i].ln, XSTRLEN(ln2nid[i].ln)) == 0) {
+                return ln2nid[i].nid;
+            }
+        }
+
+        /* Return ECC ln */
+        #ifdef HAVE_ECC
+        {
+            int eccEnum;
+            /* Nginx uses this OpenSSL string. */
+            #ifdef WOLFSSL_NGINX
+                if (XSTRNCMP(ln, "prime256v1", 10) == 0) ln = "SECP256R1";
+                if (XSTRNCMP(ln, "secp384r1", 10) == 0) ln = "SECP384R1";
+            #endif
+            /* find based on name and return NID */
+            for (i = 0; i < ecc_sets[i].size; i++) {
+                if (XSTRNCMP(ln, ecc_sets[i].name, ECC_MAXNAME) == 0) {
+                    eccEnum = ecc_sets[i].id;
+                    /* Convert enum value in ecc_curve_id to OpenSSL NID */
+                    return EccEnumToNID(eccEnum);
+                }
+            }
+        }
+        #endif /* HAVE_ECC */
+
+        return NID_undef;
     }
 
     /* compares two objects, return 0 if equal */
@@ -38516,18 +38666,17 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
     }
     #endif
 
-    #ifndef NO_WOLFSSL_STUB
-    void wolfSSL_set_verify_depth(WOLFSSL *ssl, int depth) {
-        WOLFSSL_ENTER("wolfSSL_set_verify_depth");
-#ifndef OPENSSL_EXTRA
+    void wolfSSL_set_verify_depth(WOLFSSL *ssl, int depth)
+    {
+    #if !defined(OPENSSL_EXTRA) && !defined(NO_WOLFSSL_STUB)
         (void)ssl;
         (void)depth;
         WOLFSSL_STUB("wolfSSL_set_verify_depth");
-#else
+    #else
+        WOLFSSL_ENTER("wolfSSL_set_verify_depth");
         ssl->options.verifyDepth = (byte)depth;
-#endif
-    }
     #endif
+    }
 
 
     WOLFSSL_ASN1_OBJECT * wolfSSL_X509_NAME_ENTRY_get_object(WOLFSSL_X509_NAME_ENTRY *ne) {
@@ -38546,7 +38695,7 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
      *
      * returns the setup WOLFSSL_X509_NAME pointer on success and NULL on fail
      */
-    static WOLFSSL_X509_NAME *wolfSSL_nameByLoc( WOLFSSL_X509_NAME *name, int loc)
+    static WOLFSSL_X509_NAME* wolfSSL_nameByLoc(WOLFSSL_X509_NAME *name, int loc)
     {
         char* pt = NULL;
         int sz = 0;
@@ -38668,6 +38817,24 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
         if (loc <= DN_NAMES_MAX + name->fullName.dcNum) {
             if (wolfSSL_nameByLoc(name, loc) != NULL)
                 return &name->cnEntry;
+        }
+        /* DC component */
+        if (name->fullName.dcMode) {
+            if (name->fullName.fullName != NULL){
+                if (loc == name->fullName.dcNum){
+                    name->cnEntry.data.data
+                        = &name->fullName.fullName[name->fullName.cIdx];
+                    name->cnEntry.data.length = name->fullName.cLen;
+                    name->cnEntry.nid         = ASN_COUNTRY_NAME;
+                } else {
+                    name->cnEntry.data.data
+                        = &name->fullName.fullName[name->fullName.dcIdx[loc]];
+                    name->cnEntry.data.length = name->fullName.dcLen[loc];
+                    name->cnEntry.nid         = ASN_DOMAIN_COMPONENT;
+                }
+            }
+            name->cnEntry.data.type = CTC_UTF8;
+        /* common name index case */
         } else if (loc == name->fullName.cnIdx && name->x509 != NULL) {
             /* get CN shortcut from x509 since it has null terminator */
             name->cnEntry.data.data   = name->x509->subjectCN;
@@ -38675,11 +38842,11 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
             name->cnEntry.data.type   = CTC_UTF8;
             name->cnEntry.nid         = ASN_COMMON_NAME;
             name->cnEntry.set         = 1;
-            return &name->cnEntry;
+        } else {
+            WOLFSSL_MSG("loc passed in is not in range of parsed DN's");
+            return NULL;
         }
-        WOLFSSL_MSG("loc passed in is not in range of parsed DN's");
-
-        return NULL;
+        return &name->cnEntry;
     }
 
     #ifndef NO_WOLFSSL_STUB
@@ -38701,7 +38868,7 @@ void* wolfSSL_GetDhAgreeCtx(WOLFSSL* ssl)
     }
     #endif
 
-#endif /* OPENSSL_ALL || HAVE_LIGHTY || WOLFSSL_MYSQL_COMPATIBLE || HAVE_STUNNEL || WOLFSSL_NGINX || HAVE_POCO_LIB || WOLFSSL_HAPROXY */
+#endif /* OPENSSL_EXTRA || HAVE_LIGHTY || WOLFSSL_MYSQL_COMPATIBLE || HAVE_STUNNEL || WOLFSSL_NGINX || HAVE_POCO_LIB || WOLFSSL_HAPROXY */
 #endif /* OPENSSL_EXTRA */
 
 #ifndef WOLFCRYPT_ONLY
@@ -39260,7 +39427,7 @@ end:
  * version 2 build.
  *
  * return bytes written on success */
-static int wc_DhParamsToDer(DhKey* key, byte* out, word32* outSz)
+int wc_DhParamsToDer(DhKey* key, byte* out, word32* outSz)
 {
     word32 sz = 0, idx = 0;
     int pSz = 0, gSz = 0, ret;
@@ -39334,8 +39501,202 @@ static int wc_DhParamsToDer(DhKey* key, byte* out, word32* outSz)
     return idx;
 }
 
-static int wc_DhPubKeyToDer(DhKey*  key, byte* out, word32* outSz);
-static int wc_DhPrivKeyToDer(DhKey* key, byte* out, word32* outSz);
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+int wc_DhPubKeyToDer(DhKey*  key, byte* out, word32* outSz)
+{
+    word32 sz = 0;
+    word32 paramSz = 0;
+    int ret;
+    int pubSz = 0;
+    int idx = 0;
+    byte scratch[MAX_ALGO_SZ];
+
+    /* Get size of entire key */
+
+    /*  SEQUENCE               <--| SetAlgoId
+     *      OBJECT IDENTIFIER  <--|
+     *      SEQUENCE     <--
+     *          INTEGER    | wc_DhParamsToDer
+     *          INTEGER  <--
+     */
+    ret = wc_DhParamsToDer(key, NULL, &paramSz);
+    if (ret != LENGTH_ONLY_E)
+        return ASN_PARSE_E;
+    sz += paramSz;
+    sz += SetAlgoID(DHk, scratch, oidKeyType, paramSz);
+
+    /*  BIT STRING
+     *      INTEGER
+     */
+    pubSz = mp_unsigned_bin_size(&key->pub);
+    if (pubSz < 0)
+        return pubSz;
+    else if (pubSz > 256) /* Key is larger than 2048 */
+        return ASN_VERSION_E;
+
+    if (mp_leading_bit(&key->pub))
+        pubSz++;
+
+    sz += ASN_TAG_SZ; /* Integer */
+    sz += SetLength(pubSz, scratch);
+    sz += pubSz;
+
+    sz += SetBitString(pubSz + ASN_BIT_STRING, 0, scratch);
+
+    if (out == NULL) {
+        /* Uppermost SEQUENCE */
+        *outSz = sz + SetSequence(sz, scratch);
+        return LENGTH_ONLY_E;
+    }
+    /* end get size of entire key */
+
+    /* Check for indexing errors */
+    if (*outSz < MAX_SEQ_SZ || *outSz < sz) {
+        return BUFFER_E;
+    }
+
+    /* Build Up Entire Key */
+
+    idx += SetSequence(sz, out);
+
+    idx += SetAlgoID(DHk, out+idx, oidKeyType, paramSz);
+    ret = wc_DhParamsToDer(key, out+idx, &paramSz);
+    if (ret < 0)
+        return ret;
+    idx += ret;
+
+    /* BIT STRING
+     *   INTEGER
+     */
+    if (pubSz == 256) { /* Key Size: 2048 */
+        idx += SetBitString(pubSz + ASN_BIT_STRING+1, 0, out+idx);
+    } else if (pubSz == 128) { /* Key Size: 1024 */
+        idx += SetBitString(pubSz + ASN_BIT_STRING, 0, out+idx);
+    } else if (pubSz == 64) { /* Key Size: 512 */
+        idx += SetBitString(pubSz + ASN_BIT_STRING-1, 0, out+idx);
+    } else {
+        WOLFSSL_MSG("Unsupported Key Size");
+        return ASN_PARSE_E;
+    }
+
+    out[idx++] = ASN_INTEGER;
+    idx += SetLength(pubSz, out + idx);
+    if (mp_leading_bit(&key->pub)) {
+        out[idx++] = 0x00;
+        pubSz -= 1; /* subtract 1 from size to account for leading 0 */
+    }
+    ret = mp_to_unsigned_bin(&key->pub, out + idx);
+    if (ret != MP_OKAY) {
+        return BUFFER_E;
+    }
+    idx += pubSz;
+
+    return idx;
+}
+
+int wc_DhPrivKeyToDer(DhKey* key, byte* out, word32* outSz)
+{
+    word32 sz = 0;
+    word32 paramSz = 0;
+    int ret;
+    int privSz = 0;
+    int idx = 0;
+    byte scratch[MAX_ALGO_SZ];
+
+    /* Get size of entire key */
+
+    /*  INTEGER 0 */
+    sz += ASN_TAG_SZ; /* Integer */
+    sz += SetLength(1, scratch);
+    sz += 1;
+
+    /*  SEQUENCE               <--| SetAlgoId
+     *      OBJECT IDENTIFIER  <--|
+     *      SEQUENCE       <--
+     *          INTEGER       | wc_DhParamsToDer
+     *          INTEGER     <--
+     */
+    ret = wc_DhParamsToDer(key, NULL, &paramSz);
+    if (ret != LENGTH_ONLY_E)
+        return ASN_PARSE_E;
+    sz += paramSz;
+    sz += SetAlgoID(DHk, scratch, oidKeyType, paramSz);
+
+    /*  OCTET STRING
+     *      INTEGER
+     */
+    privSz = mp_unsigned_bin_size(&key->priv);
+    if (privSz < 0)
+        return privSz;
+    else if (privSz > 256) /* Key is larger than 2048 */
+        return ASN_VERSION_E;
+
+    if (mp_leading_bit(&key->priv))
+        privSz++;
+
+    sz += ASN_TAG_SZ; /* Integer */
+    sz += SetLength(privSz, scratch);
+    sz += privSz;
+
+    sz += SetOctetString(privSz + ASN_OCTET_STRING, scratch);
+
+    if (out == NULL) {
+        /* Uppermost SEQUENCE */
+        *outSz = sz + SetSequence(sz, scratch);
+        return LENGTH_ONLY_E;
+    }
+    /* end get size of entire key */
+
+    /* Check for indexing errors */
+    if (*outSz < MAX_SEQ_SZ || *outSz < sz) {
+        return BUFFER_E;
+    }
+
+    /* Build Up Entire Key */
+
+    idx += SetSequence(sz, out);
+
+    /* INTEGER 0 */
+    out[idx++] = ASN_INTEGER;
+    idx += SetLength(1, out+idx);
+    out[idx++] = 0;
+
+    idx += SetAlgoID(DHk, out+idx, oidKeyType, paramSz);
+    ret = wc_DhParamsToDer(key, out+idx, &paramSz);
+    if (ret < 0)
+        return ret;
+    idx += ret;
+
+    /* OCTET STRING
+     *   INTEGER
+     */
+    if (privSz == 256) {
+        idx += SetOctetString(privSz + ASN_OCTET_STRING, out+idx);
+    } else if (privSz == 128) {
+        idx += SetOctetString(privSz + ASN_OCTET_STRING-1, out+idx);
+    } else if (privSz == 64) {
+        idx += SetOctetString(privSz + ASN_OCTET_STRING-2, out+idx);
+    } else {
+        WOLFSSL_MSG("Unsupported key size");
+        return ASN_VERSION_E;
+    }
+
+    out[idx++] = ASN_INTEGER;
+    idx += SetLength(privSz, out + idx);
+    if (mp_leading_bit(&key->priv)) {
+        out[idx++] = 0x00;
+        privSz -= 1; /* subtract 1 from size to account for leading 0 */
+    }
+    ret = mp_to_unsigned_bin(&key->priv, out + idx);
+    if (ret != MP_OKAY) {
+        return BUFFER_E;
+    }
+    idx += privSz;
+
+    return idx;
+}
+
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 
 
 /* Writes the DH parameters in PEM format from "dh" out to the file pointer
@@ -41789,6 +42150,74 @@ int wolfSSL_X509_get_ex_new_index(int idx, void *arg, void *a, void *b, void *c)
 
     return x509_idx++;
 }
+
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+int CRYPTO_set_ex_data(WOLFSSL_CRYPTO_EX_DATA* r, int idx, void* arg)
+{
+    WOLFSSL_STACK* sk;
+    WOLFSSL_ENTER("wolfSSL_CRYPTO_set_ex_data");
+
+    if (r == NULL || arg == NULL) {
+        WOLFSSL_MSG("Invalid Input: WOLFSSL_CRYPTO_EX_DATA");
+        return WOLFSSL_FAILURE;
+    }
+
+    sk = r->data;
+    if (sk == NULL || sk->num < (unsigned long)idx) {
+        WOLFSSL_MSG("Invalid Input: Stack");
+        return WOLFSSL_FAILURE;
+    }
+
+    /* Go to node at idx */
+    for (; sk != NULL && idx > 0; idx--)
+        sk = sk->next;
+    /* if node is tail of stack */
+    if (sk == NULL) {
+        WOLFSSL_MSG("idx exceeds stack size.");
+        return WOLFSSL_FAILURE;
+    }
+    /* Free any data */
+    if (sk->data.generic != NULL)
+        XFREE(sk->data.generic, NULL, DYNAMIC_TYPE_OPENSSL);
+
+    sk->data.generic = arg;
+
+    return WOLFSSL_SUCCESS;
+}
+
+void* CRYPTO_get_ex_data(const WOLFSSL_CRYPTO_EX_DATA* r, int idx)
+{
+    void* ex_data;
+    WOLFSSL_STACK* sk;
+    WOLFSSL_ENTER("wolfSSL_CRYPTO_get_ex_data");
+
+    if (r == NULL) {
+        WOLFSSL_MSG("Invalid Input: WOLFSSL_CRYPTO_EX_DATA");
+        return NULL;
+    }
+
+    sk = r->data;
+    if (sk == NULL || sk->num < (unsigned long)idx) {
+        WOLFSSL_MSG("Invalid Input: Stack");
+        return NULL;
+    }
+
+    /* Go to node at idx */
+    for (; sk != NULL && idx > 0; idx--)
+        sk = sk->next;
+    /* if node is tail of stack */
+    if (sk == NULL) {
+        WOLFSSL_MSG("idx exceeds stack size.");
+        return NULL;
+    }
+    ex_data = sk->data.generic;
+    if (ex_data == NULL) {
+        WOLFSSL_MSG("Error getting ex_data");
+    }
+
+    return ex_data;
+}
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 
 void *wolfSSL_X509_get_ex_data(X509 *x509, int idx)
 {

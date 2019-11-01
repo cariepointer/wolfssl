@@ -928,6 +928,8 @@ typedef void (WOLFSSL_CRYPTO_EX_free)(void* p, void* ptr,
 WOLFSSL_API int  wolfSSL_get_ex_new_index(long argValue, void* arg,
         WOLFSSL_CRYPTO_EX_new* a, WOLFSSL_CRYPTO_EX_dup* b,
         WOLFSSL_CRYPTO_EX_free* c);
+WOLFSSL_API int CRYPTO_set_ex_data(WOLFSSL_CRYPTO_EX_DATA* r, int idx, void* arg);
+WOLFSSL_API void* CRYPTO_get_ex_data(const WOLFSSL_CRYPTO_EX_DATA* r, int idx);
 #endif
 
 WOLFSSL_API void wolfSSL_CTX_set_verify(WOLFSSL_CTX*, int,
@@ -3099,7 +3101,8 @@ WOLFSSL_API const char *  wolfSSL_OBJ_nid2sn(int n);
 WOLFSSL_API int wolfSSL_OBJ_obj2nid(const WOLFSSL_ASN1_OBJECT *o);
 WOLFSSL_API int wolfSSL_OBJ_sn2nid(const char *sn);
 
-WOLFSSL_API char* wolfSSL_OBJ_nid2ln(int n);
+WOLFSSL_API const char* wolfSSL_OBJ_nid2ln(int n);
+WOLFSSL_API int wolfSSL_OBJ_ln2nid(const char *ln);
 WOLFSSL_API int wolfSSL_OBJ_cmp(const WOLFSSL_ASN1_OBJECT* a,
             const WOLFSSL_ASN1_OBJECT* b);
 WOLFSSL_API int wolfSSL_OBJ_txt2nid(const char *sn);
