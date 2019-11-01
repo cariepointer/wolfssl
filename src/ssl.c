@@ -41592,7 +41592,11 @@ int wolfSSL_CIPHER_get_bits(const WOLFSSL_CIPHER *c, int *alg_bits)
     int ret = WOLFSSL_FAILURE;
     WOLFSSL_ENTER("wolfSSL_CIPHER_get_bits");
     if(c != NULL && c->ssl != NULL) {
-        ret = 8 * c->ssl->specs.key_size;
+        #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+            ret = c->bits;
+        #else
+            ret = 8 * c->ssl->specs.key_size;
+        #endif
         if(alg_bits != NULL) {
             *alg_bits = ret;
         }
@@ -43141,8 +43145,8 @@ void wolfSSL_OPENSSL_config(char *config_name)
     (void)config_name;
     WOLFSSL_STUB("OPENSSL_config");
 }
-#endif
-#endif
+#endif /* !NO_WOLFSSL_STUB */
+#endif /* OPENSSL_ALL || WOLFSSL_NGINX || WOLFSSL_HAPROXY */
 
 #if defined(OPENSSL_ALL) || defined(WOLFSSL_NGINX) || defined(WOLFSSL_HAPROXY) \
     || defined(OPENSSL_EXTRA) || defined(HAVE_LIGHTY)
@@ -46865,6 +46869,34 @@ int wolfSSL_EVP_PKEY_assign_EC_KEY(EVP_PKEY* pkey, WOLFSSL_EC_KEY* key)
 }
 #endif
 
+#if defined(OPENSSL_EXTRA) && !defined(NO_DSA)
+int wolfSSL_EVP_PKEY_assign_DSA(EVP_PKEY* pkey, WOLFSSL_DSA* key)
+{
+    if (pkey == NULL || key == NULL)
+        return WOLFSSL_FAILURE;
+
+    pkey->type = EVP_PKEY_DSA;
+    pkey->dsa = key;
+    pkey->ownDsa = 1;
+
+    return WOLFSSL_SUCCESS;
+}
+#endif
+
+#if defined(OPENSSL_EXTRA) && !defined(NO_DH)
+int wolfSSL_EVP_PKEY_assign_DH(EVP_PKEY* pkey, WOLFSSL_DH* key)
+{
+    if (pkey == NULL || key == NULL)
+        return WOLFSSL_FAILURE;
+
+    pkey->type = EVP_PKEY_DH;
+    pkey->dh = key;
+    pkey->ownDh = 1;
+
+    return WOLFSSL_SUCCESS;
+}
+#endif
+
 #if defined(OPENSSL_ALL) && defined(HAVE_PKCS7)
 PKCS7* wolfSSL_PKCS7_new(void)
 {
@@ -47189,8 +47221,10 @@ WOLFSSL_STACK* wolfSSL_sk_X509_new(void)
 {
     WOLFSSL_STACK* s = (WOLFSSL_STACK*)XMALLOC(sizeof(WOLFSSL_STACK), NULL,
                                                              DYNAMIC_TYPE_X509);
-    if (s != NULL)
+    if (s != NULL) {
         XMEMSET(s, 0, sizeof(*s));
+        s->type = STACK_TYPE_X509;
+    }
 
     return s;
 }
