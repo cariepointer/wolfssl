@@ -963,7 +963,11 @@ static int CheckBitString(const byte* input, word32* inOutIdx, int* len,
  * output      Buffer to write into.
  * returns the number of bytes added to the buffer.
  */
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+WOLFSSL_LOCAL word32 SetBitString(word32 len, byte unusedBits, byte* output)
+#else
 static word32 SetBitString(word32 len, byte unusedBits, byte* output)
+#endif
 {
     word32 idx = 0;
 
