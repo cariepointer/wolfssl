@@ -421,6 +421,9 @@ enum Key_Sum {
     NTRUk    = 274,
     ECDSAk   = 518,
     ED25519k = 256
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    ,DHk      = 647 /* dhKeyAgreement OID: 1.2.840.113549.1.3.1 */
+    #endif
 };
 
 
@@ -1119,6 +1122,12 @@ WOLFSSL_LOCAL int GetASNTag(const byte* input, word32* idx, byte* tag,
 WOLFSSL_LOCAL word32 SetLength(word32 length, byte* output);
 WOLFSSL_LOCAL word32 SetSequence(word32 len, byte* output);
 WOLFSSL_LOCAL word32 SetOctetString(word32 len, byte* output);
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+WOLFSSL_LOCAL int wc_DhParamsToDer(DhKey* key, byte* out, word32* outSz);
+WOLFSSL_LOCAL int wc_DhPubKeyToDer(DhKey* key, byte* out, word32* outSz);
+WOLFSSL_LOCAL int wc_DhPrivKeyToDer(DhKey* key, byte* out, word32* outSz);
+WOLFSSL_LOCAL word32 SetBitString(word32 len, byte unusedBits, byte* output);
+#endif
 WOLFSSL_LOCAL word32 SetImplicit(byte tag,byte number,word32 len,byte* output);
 WOLFSSL_LOCAL word32 SetExplicit(byte number, word32 len, byte* output);
 WOLFSSL_LOCAL word32 SetSet(word32 len, byte* output);
