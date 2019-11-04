@@ -48,6 +48,7 @@ typedef struct WOLFSSL_BIGNUM {
 } WOLFSSL_BIGNUM;
 
 
+#define BN_ULONG WOLFSSL_BN_ULONG
 #define WOLFSSL_BN_ULONG mp_digit
 
 typedef struct WOLFSSL_BN_CTX WOLFSSL_BN_CTX;
