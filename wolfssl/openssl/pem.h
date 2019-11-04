@@ -231,6 +231,7 @@ int wolfSSL_PEM_write_DHparams(XFILE fp, WOLFSSL_DH* dh);
 /* DSA */
 #define PEM_write_bio_DSAPrivateKey     wolfSSL_PEM_write_bio_DSAPrivateKey
 #define PEM_write_DSAPrivateKey         wolfSSL_PEM_write_DSAPrivateKey
+#define PEM_write_bio_DSA_PUBKEY        wolfSSL_PEM_write_bio_DSA_PUBKEY
 #define PEM_write_DSA_PUBKEY            wolfSSL_PEM_write_DSA_PUBKEY
 #define PEM_read_bio_DSAPrivateKey      wolfSSL_PEM_read_bio_DSAPrivateKey
 #define PEM_read_bio_DSA_PUBKEY         wolfSSL_PEM_read_bio_DSA_PUBKEY
