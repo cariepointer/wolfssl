@@ -123,7 +123,7 @@ typedef struct WOLFSSL_SOCKADDR     WOLFSSL_SOCKADDR;
 typedef struct WOLFSSL_CRL          WOLFSSL_CRL;
 typedef struct WOLFSSL_X509_STORE_CTX WOLFSSL_X509_STORE_CTX;
 
-typedef void (*WOLFSSL_X509_STORE_CTX_verify_cb)(int, WOLFSSL_X509_STORE_CTX *);
+typedef int (*WOLFSSL_X509_STORE_CTX_verify_cb)(int, WOLFSSL_X509_STORE_CTX *);
 
 /* redeclare guard */
 #define WOLFSSL_TYPES_DEFINED
@@ -150,6 +150,7 @@ typedef struct WOLFSSL_DSA            WOLFSSL_DSA;
 typedef struct WOLFSSL_EC_KEY         WOLFSSL_EC_KEY;
 typedef struct WOLFSSL_EC_POINT       WOLFSSL_EC_POINT;
 typedef struct WOLFSSL_EC_GROUP       WOLFSSL_EC_GROUP;
+typedef struct WOLFSSL_EC_BUILTIN_CURVE WOLFSSL_EC_BUILTIN_CURVE;
 #define WOLFSSL_EC_TYPE_DEFINED
 #endif
 
@@ -369,6 +370,11 @@ struct WOLFSSL_X509_INFO {
 };
 
 #define WOLFSSL_EVP_PKEY_DEFAULT EVP_PKEY_RSA /* default key type */
+
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    #define wolfSSL_SSL_MODE_RELEASE_BUFFERS    0x00000010U
+    #define wolfSSL_SSL_CTRL_SET_TMP_ECDH       4
+#endif
 
 struct WOLFSSL_X509_ALGOR {
     WOLFSSL_ASN1_OBJECT* algorithm;
@@ -1558,7 +1564,6 @@ enum {
     SSL_OP_TLS_D5_BUG                             = 0x00000080,
     SSL_OP_TLS_BLOCK_PADDING_BUG                  = 0x00000100,
     SSL_OP_TLS_ROLLBACK_BUG                       = 0x00000200,
-    SSL_OP_ALL                                    = 0x00000400,
     SSL_OP_EPHEMERAL_RSA                          = 0x00000800,
     WOLFSSL_OP_NO_SSLv3                           = 0x00001000,
     WOLFSSL_OP_NO_TLSv1                           = 0x00002000,
@@ -1579,6 +1584,18 @@ enum {
     SSL_OP_NO_COMPRESSION                         = 0x10000000,
     WOLFSSL_OP_NO_TLSv1_3                         = 0x20000000,
     WOLFSSL_OP_NO_SSLv2                           = 0x40000000,
+    SSL_OP_ALL   =
+                    (SSL_OP_MICROSOFT_SESS_ID_BUG
+                  | SSL_OP_NETSCAPE_CHALLENGE_BUG
+                  | SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG
+                  | SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG
+                  | SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER
+                  | SSL_OP_MSIE_SSLV2_RSA_PADDING
+                  | SSL_OP_SSLEAY_080_CLIENT_DH_BUG
+                  | SSL_OP_TLS_D5_BUG
+                  | SSL_OP_TLS_BLOCK_PADDING_BUG
+                  | SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS
+                  | SSL_OP_TLS_ROLLBACK_BUG),
 };
 
 /* for compatibility these must be macros */
