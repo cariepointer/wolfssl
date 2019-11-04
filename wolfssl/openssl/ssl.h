@@ -42,6 +42,12 @@
 #include <wolfssl/openssl/crypto.h>
 #endif
 
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+#include <wolfssl/openssl/dh.h>
+#include <wolfssl/openssl/objects.h>
+#include <wolfssl/wolfcrypt/settings.h>
+#endif
+
 /* all NID_* values are in asn.h */
 #include <wolfssl/wolfcrypt/asn.h>
 
@@ -111,12 +117,22 @@ typedef WOLFSSL_X509_VERIFY_PARAM X509_VERIFY_PARAM;
 #define EVP_CIPHER_INFO        EncryptedInfo
 
 #define STACK_OF(x) WOLFSSL_STACK
+#define OPENSSL_STACK WOLFSSL_STACK
+#define _STACK OPENSSL_STACK
 
-#define CRYPTO_free                     XFREE
+#define CONF_get1_default_config_file   wolfSSL_CONF_get1_default_config_file
+
+#ifdef WOLFSSL_QT
+    #define CRYPTO_free(xp) {if((xp)) wolfSSL_Free((xp));}
+#else
+  #define CRYPTO_free                     XFREE
+#endif
+
 #define CRYPTO_malloc                   XMALLOC
 #define CRYPTO_EX_new                   WOLFSSL_CRYPTO_EX_new
 #define CRYPTO_EX_dup                   WOLFSSL_CRYPTO_EX_dup
 #define CRYPTO_EX_free                  WOLFSSL_CRYPTO_EX_free
+#define CRYPTO_EX_DATA                  WOLFSSL_CRYPTO_EX_DATA
 
 /* depreciated */
 #define CRYPTO_thread_id                wolfSSL_thread_id
@@ -244,7 +260,7 @@ typedef WOLFSSL_X509_VERIFY_PARAM X509_VERIFY_PARAM;
 #define SSL_set_quiet_shutdown          wolfSSL_set_quiet_shutdown
 #define SSL_get_error                   wolfSSL_get_error
 #define SSL_set_session                 wolfSSL_set_session
-#define SSL_get_session                 wolfSSL_get_session
+#define SSL_get_session(x)              wolfSSL_get_session((WOLFSSL*) (x))
 #define SSL_flush_sessions              wolfSSL_flush_sessions
 /* assume unlimited temporarily */
 #define SSL_CTX_get_session_cache_mode(ctx) 0
@@ -841,6 +857,7 @@ enum {
     GEN_DNS   = 0x02, /* ASN_DNS_TYPE */
     GEN_EMAIL = 0x01, /* ASN_RFC822_TYPE */
     GEN_URI   = 0x06, /* ASN_URI_TYPE */
+    GEN_IPADD = 0x07,
     GEN_RID   = 0x08, /* Registered ID, not supported */
 };
 
@@ -955,6 +972,7 @@ enum {
 #define SSL_CTRL_SET_TLSEXT_STATUS_REQ_CB_ARG   64
 
 #define SSL_CTRL_GET_EXTRA_CHAIN_CERTS          82
+#define SSL_CTRL_GET_SESSION_REUSED             0
 
 #define SSL_ctrl                        wolfSSL_ctrl
 #define SSL_CTX_ctrl                    wolfSSL_CTX_ctrl
@@ -993,7 +1011,7 @@ enum {
 
 #define SSL_CTX_flush_sessions          wolfSSL_flush_sessions
 #define SSL_CTX_add_session             wolfSSL_CTX_add_session
-#define SSL_version                     wolfSSL_version
+#define SSL_version(x)                  wolfSSL_version ((WOLFSSL*) (x))
 #define SSL_get_state                   wolfSSL_get_state
 #define SSL_state_string_long           wolfSSL_state_string_long
 
