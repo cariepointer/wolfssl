@@ -19109,7 +19109,7 @@ size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_BUILTIN_CURVE *r, size_t nitems)
 {
     size_t x;
     size_t eccSetCnt = 0;
-//    int eccEnum;
+    int eccEnum;
 
     WOLFSSL_ENTER("wolfSSL_EC_get_builtin_curves");
 
@@ -19122,9 +19122,9 @@ size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_BUILTIN_CURVE *r, size_t nitems)
 
     for (x = 0; x < nitems; x++) {
         if (x < eccSetCnt) {
-//            eccEnum = ecc_sets[x].id;
+            eccEnum = ecc_sets[x].id;
             /* Convert enum value in ecc_curve_id to OpenSSL NID */
-//            r[x].nid = EccEnumToNID(eccEnum);
+            r[x].nid = EccEnumToNID(eccEnum);
             r[x].comment = ecc_sets[x].name;
         }
         else
@@ -19347,8 +19347,8 @@ int wolfSSL_i2d_DHparams(const WOLFSSL_DH *dh, unsigned char **out)
     len = ((len > 127) ? 2 : 1) + len;
 
     if (out != NULL && *out != NULL) {
-//        ret = StoreDHparams(*out, &len, (mp_int*)dh->p->internal,
-//                                        (mp_int*)dh->g->internal);
+        ret = StoreDHparams(*out, &len, (mp_int*)dh->p->internal,
+                                        (mp_int*)dh->g->internal);
         if (ret != MP_OKAY) {
             WOLFSSL_MSG("StoreDHparams error");
             len = 0;
@@ -21739,11 +21739,11 @@ char* wolfSSL_CIPHER_description(const WOLFSSL_CIPHER* cipher, char* in,
     /* if cipher is in the stack from wolfSSL_get_ciphers_compat then
      * Return the description based on cipher_names[cipher->offset]
      */
-//    if (cipher->in_stack == TRUE) {
-//        wolfSSL_sk_CIPHER_description((WOLFSSL_CIPHER*)cipher);
-//        XSTRNCPY(in,cipher->description,len);
-//        return ret;
-//    }
+    if (cipher->in_stack == TRUE) {
+        wolfSSL_sk_CIPHER_description((WOLFSSL_CIPHER*)cipher);
+        XSTRNCPY(in,cipher->description,len);
+        return ret;
+    }
 #endif
 
     /* Get the cipher description based on the SSL session cipher */
@@ -25285,18 +25285,6 @@ static long wolf_set_options(long old_op, long op)
     /* if SSL_OP_ALL then turn all bug workarounds on */
     if ((op & SSL_OP_ALL) == SSL_OP_ALL) {
         WOLFSSL_MSG("\tSSL_OP_ALL");
-
-        op |= SSL_OP_MICROSOFT_SESS_ID_BUG;
-        op |= SSL_OP_NETSCAPE_CHALLENGE_BUG;
-        op |= SSL_OP_NETSCAPE_REUSE_CIPHER_CHANGE_BUG;
-        op |= SSL_OP_SSLREF2_REUSE_CERT_TYPE_BUG;
-        op |= SSL_OP_MICROSOFT_BIG_SSLV3_BUFFER;
-        op |= SSL_OP_MSIE_SSLV2_RSA_PADDING;
-        op |= SSL_OP_SSLEAY_080_CLIENT_DH_BUG;
-        op |= SSL_OP_TLS_D5_BUG;
-        op |= SSL_OP_TLS_BLOCK_PADDING_BUG;
-        op |= SSL_OP_TLS_ROLLBACK_BUG;
-        op |= SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS;
     }
 
     /* by default cookie exchange is on with DTLS */
@@ -28464,11 +28452,11 @@ static int SetDhInternal(WOLFSSL_DH* dh)
             WOLFSSL_MSG("No public key size.");
         }
         if (privSz > 0 || pubSz > 0) {
-//            ret = wc_DhSetFullKeys((DhKey*)dh->internal,priv_key,privSz,
-//                                    pub_key,pubSz);
-//            if (ret == WOLFSSL_FAILURE) {
-//                WOLFSSL_MSG("Failed setting private or public key.");
-//            }
+            ret = wc_DhSetFullKeys((DhKey*)dh->internal,priv_key,privSz,
+                                    pub_key,pubSz);
+            if (ret == WOLFSSL_FAILURE) {
+                WOLFSSL_MSG("Failed setting private or public key.");
+            }
         }
     #endif /* WOLFSSL_QT || OPENSSL_ALL */
 
@@ -30622,7 +30610,7 @@ int wolfSSL_EVP_PKEY_set1_DSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DSA *key)
     }
     else {
         /* Public key to DER */
-//        derSz = wc_DsaKeyToPublicDer(dsa, derBuf, derMax);
+        derSz = wc_DsaKeyToPublicDer(dsa, derBuf, derMax);
     }
 
     if (derSz < 0) {
