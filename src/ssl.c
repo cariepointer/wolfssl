@@ -7833,7 +7833,40 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PrivateKey(int type, WOLFSSL_EVP_PKEY** out,
             }
             break;
 #endif /* HAVE_ECC */
-
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+#ifndef NO_DSA
+        case EVP_PKEY_DSA:
+            local->ownDsa = 1;
+            local->dsa = wolfSSL_DSA_new();
+            if (local->dsa == NULL) {
+                wolfSSL_EVP_PKEY_free(local);
+                return NULL;
+            }
+            if (wolfSSL_DSA_LoadDer(local->dsa,
+                    (const unsigned char*)local->pkey.ptr, local->pkey_sz)
+                    != SSL_SUCCESS) {
+                wolfSSL_EVP_PKEY_free(local);
+                return NULL;
+            }
+            break;
+#endif /* NO_DSA */
+#ifndef NO_DH
+        case EVP_PKEY_DH:
+            local->ownDh = 1;
+            local->dh = wolfSSL_DH_new();
+            if (local->dh == NULL) {
+                wolfSSL_EVP_PKEY_free(local);
+                return NULL;
+            }
+            if (wolfSSL_DH_LoadDer(local->dh,
+                      (const unsigned char*)local->pkey.ptr, local->pkey_sz)
+                      != SSL_SUCCESS) {
+                wolfSSL_EVP_PKEY_free(local);
+                return NULL;
+            }
+            break;
+#endif /* HAVE_DH */
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
         default:
             WOLFSSL_MSG("Unsupported key type");
             wolfSSL_EVP_PKEY_free(local);
