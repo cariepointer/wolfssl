@@ -1812,7 +1812,7 @@ struct WOLFSSL_CIPHER {
     byte cipherSuite;
     WOLFSSL* ssl;
 #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
-    char description[MAX_CIPHERNAME_SZ];
+    char description[UINT8_SZ];
     unsigned long offset;
     unsigned int in_stack; /* TRUE if added to stack in wolfSSL_get_ciphers_compat */
     int bits;
