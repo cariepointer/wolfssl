@@ -18743,6 +18743,7 @@ void wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(WOLFSSL_STACK* sk,
  * returns a new WOLFSSL_STACK structure on success */
 WOLFSSL_STACK* wolfSSL_sk_new_node(void* heap)
 {
+    WOLFSSL_ENTER("wolfSSL_sk_new_node");
     WOLFSSL_STACK* sk = (WOLFSSL_STACK*)XMALLOC(sizeof(WOLFSSL_STACK), heap,
                                                           DYNAMIC_TYPE_OPENSSL);
     if (sk != NULL) {
@@ -32706,12 +32707,17 @@ WOLFSSL_EC_GROUP *wolfSSL_EC_GROUP_new_by_curve_name(int nid)
  */
 int wolfSSL_EC_GROUP_get_curve_name(const WOLFSSL_EC_GROUP *group)
 {
+    int nid;
     WOLFSSL_ENTER("wolfSSL_EC_GROUP_get_curve_name");
 
     if (group == NULL) {
         WOLFSSL_MSG("wolfSSL_EC_GROUP_get_curve_name Bad arguments");
         return WOLFSSL_FAILURE;
     }
+
+    /* If curve_nid is ECC Enum type, return corresponding OpenSSL nid */
+    if ((nid = EccEnumToNID(group->curve_nid)) != -1)
+        return nid;
 
     return group->curve_nid;
 }
@@ -42166,8 +42172,13 @@ WOLF_STACK_OF(WOLFSSL_CIPHER) *wolfSSL_get_ciphers_compat(const WOLFSSL *ssl)
         for (i = 0; i < suites->suiteSz; i+=2) {
             WOLFSSL_STACK* add = wolfSSL_sk_new_node(ssl->heap);
             if (add != NULL) {
+                add->type = STACK_TYPE_CIPHER;
                 add->data.cipher.cipherSuite0 = suites->suites[i];
                 add->data.cipher.cipherSuite  = suites->suites[i+1];
+                #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+                /* in_stack is checked in wolfSSL_CIPHER_description */
+                add->data.cipher.in_stack = 1;
+                #endif
 
                 add->next = ret;
                 if (ret != NULL) {
