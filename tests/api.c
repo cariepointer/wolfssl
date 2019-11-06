@@ -20365,8 +20365,9 @@ static void test_wolfSSL_X509_STORE_CTX_get0_current_issuer(void)
 
     X509_free(issuer);
     X509_STORE_CTX_free(ctx);
-    #ifdef WOLFSSL_KEEP_STORE_CERTS
+    #if defined(WOLFSSL_KEEP_STORE_CERTS) || defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
         X509_free(x509Svr);
+        X509_STORE_free(str);
     #endif
     X509_free(x509Ca);
 
@@ -20409,7 +20410,8 @@ static void test_wolfSSL_X509_STORE_CTX(void)
 #ifdef OPENSSL_ALL
     sk_X509_free(sk);
 #endif
-    #ifdef WOLFSSL_KEEP_STORE_CERTS
+    #if defined(WOLFSSL_KEEP_STORE_CERTS) || defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    X509_STORE_free(str);
     X509_free(x509);
     #endif
 
@@ -20436,7 +20438,8 @@ static void test_wolfSSL_X509_STORE_CTX(void)
     AssertIntEQ(sk_num(sk3), 1); /* sanity, make sure chain has 1 cert */
     X509_STORE_CTX_free(ctx);
     sk_X509_free(sk);
-    #ifdef WOLFSSL_KEEP_STORE_CERTS
+    #if defined(WOLFSSL_KEEP_STORE_CERTS) || defined(WOLFSSL_QT)
+    X509_STORE_free(str);
     /* CTX certs not freed yet */
     X509_free(x5092);
     #endif
@@ -20631,6 +20634,9 @@ static void test_wolfSSL_X509_STORE_CTX_get0_store(void)
 
     wolfSSL_X509_STORE_CTX_free(ctx);
     wolfSSL_X509_STORE_CTX_free(ctx_no_init);
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    X509_STORE_free(store);
+#endif
 
     printf(resultFmt, passed);
     #endif /* OPENSSL_EXTRA */
@@ -22252,7 +22258,6 @@ static void test_wolfSSL_X509_PUBKEY_get0_param(void)
     AssertIntEQ(OBJ_obj2nid(obj), RSAk);
 
     X509_free(x509);
-//    AssertIntEQ(1,0);
 
     printf(resultFmt, passed);
 #endif
@@ -25992,7 +25997,6 @@ static void test_wolfSSL_OBJ_sn(void)
 
     printf(resultFmt, passed);
 }
-//carie
 #endif /* WOLFSSL_QT */
 
 
@@ -29696,7 +29700,6 @@ void ApiTest(void)
 
 #if defined(WOLFSSL_QT)
     printf("\n----------------Qt Unit Tests-------------------\n");
-    //carie
     test_wolfSSL_X509_PUBKEY_get();
     test_wolfSSL_sk_CIPHER_description();
     test_wolfSSL_get_ciphers_compat();
