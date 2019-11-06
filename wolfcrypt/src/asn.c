@@ -6594,7 +6594,7 @@ WOLFSSL_LOCAL word32 SetAlgoID(int algoOID, byte* output, int type, int curveSz)
     const  byte* algoName = 0;
     byte   ID_Length[1 + MAX_LENGTH_SZ];
     byte   seqArray[MAX_SEQ_SZ + 1];  /* add object_id to end */
-    int    length;
+    int    length = 0;
 
     tagSz = (type == oidHashType ||
              (type == oidSigType
@@ -6621,7 +6621,6 @@ WOLFSSL_LOCAL word32 SetAlgoID(int algoOID, byte* output, int type, int curveSz)
     if (algoOID == DSAk && output) {
         XMEMCPY(output, ID_Length, idSz);
         XMEMCPY(output + idSz, algoName, algoSz);
-        length = idSz + algoSz + tagSz;
         if (tagSz == 2)
             SetASNNull(&output[seqSz + idSz + algoSz]);
     }
@@ -6629,10 +6628,14 @@ WOLFSSL_LOCAL word32 SetAlgoID(int algoOID, byte* output, int type, int curveSz)
         XMEMCPY(output, seqArray, seqSz);
         XMEMCPY(output + seqSz, ID_Length, idSz);
         XMEMCPY(output + seqSz + idSz, algoName, algoSz);
-        length = seqSz + idSz + algoSz + tagSz;
         if (tagSz == 2)
             SetASNNull(&output[seqSz + idSz + algoSz]);
     }
+
+    if (algoOID == DSAk)
+        length = idSz + algoSz + tagSz;
+    else
+        length = seqSz + idSz + algoSz + tagSz;
 
     return length;
 }
