@@ -14720,6 +14720,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
         ctx->verify_cb = verify_cb;
     }
 
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
     void wolfSSL_X509_STORE_set_verify_cb(WOLFSSL_X509_STORE *st,
                                  WOLFSSL_X509_STORE_CTX_verify_cb verify_cb)
     {
@@ -14728,6 +14729,7 @@ int wolfSSL_set_compression(WOLFSSL* ssl)
             st->verify_cb = verify_cb;
         }
     }
+#endif
 
 
 #endif /* !NO_CERTS */
@@ -24331,6 +24333,7 @@ void wolfSSL_X509_STORE_CTX_set_time(WOLFSSL_X509_STORE_CTX* ctx,
     ctx->param->flags |= WOLFSSL_USE_CHECK_TIME;
 }
 
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
 #ifndef NO_WOLFSSL_STUB
 int wolfSSL_X509_STORE_CTX_set_purpose(WOLFSSL_X509_STORE_CTX *ctx,
                                        int purpose)
@@ -24341,6 +24344,7 @@ int wolfSSL_X509_STORE_CTX_set_purpose(WOLFSSL_X509_STORE_CTX *ctx,
     return 0;
 }
 #endif
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 
 #ifndef NO_WOLFSSL_STUB
 /* Returns default file name and path of config file. However
@@ -28990,10 +28994,12 @@ static int SetDhInternal(WOLFSSL_DH* dh)
     return ret;
 }
 
+#if !defined(NO_DH) && (defined(WOLFSSL_QT) || defined(OPENSSL_ALL))
 /* Set the members of DhKey into WOLFSSL_DH
  * DhKey was populated from wc_DhKeyDecode
  */
-int SetDhExternal(WOLFSSL_DH *dh) {
+int SetDhExternal(WOLFSSL_DH *dh)
+{
     DhKey *key;
     WOLFSSL_MSG("Entering SetDhExternal");
 
@@ -29027,6 +29033,7 @@ int SetDhExternal(WOLFSSL_DH *dh) {
 
     return WOLFSSL_SUCCESS;
 }
+#endif /* !NO_DH && (WOLFSSL_QT || OPENSSL_ALL) */
 
 /* return code compliant with OpenSSL :
  *   DH prime size in bytes if success, 0 if error
@@ -34931,7 +34938,6 @@ WOLFSSL_EVP_PKEY *wolfSSL_PEM_read_bio_PUBKEY(WOLFSSL_BIO* bio,
 }
 
 
-#if defined(WOLFSSL_KEY_GEN) || defined(WOLFSSL_CERT_GEN)
 #if (defined(OPENSSL_EXTRA) || defined(OPENSSL_ALL)) && !defined(NO_RSA)
 /* Uses the same format of input as wolfSSL_PEM_read_bio_PrivateKey but expects
  * the results to be an RSA key.
@@ -34968,7 +34974,6 @@ WOLFSSL_RSA* wolfSSL_PEM_read_bio_RSAPrivateKey(WOLFSSL_BIO* bio,
     wolfSSL_EVP_PKEY_free(pkey);
     return local;
 }
-#endif /* WOLFSSL_KEY_GEN || WOLFSSL_CERT_GEN */
 #endif /* OPENSSL_EXTRA || OPENSSL_ALL || !NO_RSA */
 
 #if (defined(OPENSSL_EXTRA) || defined(OPENSSL_ALL)) && (!defined(NO_CERTS) && \
@@ -40274,6 +40279,7 @@ end:
 }
 
 #ifndef NO_FILESYSTEM
+#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
 /* Convert DH key parameters to DER format, write to output (outSz)
  * If output is NULL then max expected size is set to outSz and LENGTH_ONLY_E is
  * returned.
@@ -40356,7 +40362,6 @@ int wc_DhParamsToDer(DhKey* key, byte* out, word32* outSz)
     return idx;
 }
 
-#if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
 int wc_DhPubKeyToDer(DhKey*  key, byte* out, word32* outSz)
 {
     word32 sz = 0;
@@ -40551,9 +40556,6 @@ int wc_DhPrivKeyToDer(DhKey* key, byte* out, word32* outSz)
     return idx;
 }
 
-#endif /* WOLFSSL_QT || OPENSSL_ALL */
-
-
 /* Writes the DH parameters in PEM format from "dh" out to the file pointer
  * passed in.
  *
@@ -40636,8 +40638,9 @@ int wolfSSL_PEM_write_DHparams(XFILE fp, WOLFSSL_DH* dh)
     WOLFSSL_LEAVE("wolfSSL_PEM_write_DHparams", WOLFSSL_SUCCESS);
     return WOLFSSL_SUCCESS;
 }
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 #endif /* !NO_FILESYSTEM */
-#endif
+#endif /* !NO_DH */
 
 #ifdef WOLFSSL_CERT_GEN
 
