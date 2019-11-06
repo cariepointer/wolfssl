@@ -5174,6 +5174,7 @@ static int GetKey(DecodedCert* cert)
     }
 }
 
+#if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
 #if defined(HAVE_ECC)
 /* Converts ECC curve enum values in ecc_curve_id to the associated OpenSSL NID
     value */
@@ -5242,6 +5243,7 @@ WOLFSSL_API int EccEnumToNID(int n)
     }
 }
 #endif /* HAVE_ECC */
+#endif /* OPENSSL_EXTRA || OPENSSL_EXTRA_X509_SMALL */
 
 #if defined(OPENSSL_EXTRA) || defined(OPENSSL_EXTRA_X509_SMALL)
 WOLFSSL_LOCAL int wc_OBJ_sn2nid(const char *sn)
