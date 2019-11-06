@@ -24285,6 +24285,7 @@ static void test_wolfSSL_DH_1536_prime(void)
 
 static void test_wolfSSL_PEM_write_DHparams(void)
 {
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
 #if defined(OPENSSL_EXTRA) && !defined(NO_DH) && !defined(NO_FILESYSTEM)
     DH* dh;
     BIO* bio;
@@ -24325,6 +24326,7 @@ tgZl96bcAGdru8OpQYP7x/rI4h5+rwA/kwIBAg==\n\
     XFCLOSE(fp);
 
     printf(resultFmt, passed);
+#endif /* OPENSSL_ALL || OPENSSL_QT */
 #endif
 }
 
