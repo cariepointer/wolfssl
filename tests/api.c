@@ -25432,16 +25432,12 @@ static void test_wolfSSL_X509_PUBKEY_get(void)
     evpPkey->type = WOLFSSL_SUCCESS;
     key->pkey = evpPkey;
 
-    printf(testingFmt, "wolfSSL_X509_PUBKEY_get() valid input");
+    printf(testingFmt, "wolfSSL_X509_PUBKEY_get()");
     AssertNotNull(retEvpPkey = wolfSSL_X509_PUBKEY_get(key));
     AssertIntEQ(retEvpPkey->type, WOLFSSL_SUCCESS);
-    printf(resultFmt,retEvpPkey->type  == WOLFSSL_SUCCESS ? passed : failed);
 
-    printf(testingFmt, "wolfSSL_X509_PUBKEY_get() NULL WOLFSSL_X509_PUBKEY");
     AssertNull(retEvpPkey = wolfSSL_X509_PUBKEY_get(NULL));
-    printf(resultFmt,retEvpPkey  == NULL ? passed : failed);
 
-    printf(testingFmt, "wolfSSL_X509_PUBKEY_get() valid PUBKEY, NULL EVP_PKEY");
     key->pkey = NULL;
     AssertNull(retEvpPkey = wolfSSL_X509_PUBKEY_get(key));
     printf(resultFmt,retEvpPkey == NULL ? passed : failed);
