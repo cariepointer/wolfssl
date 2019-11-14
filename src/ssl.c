@@ -19623,35 +19623,6 @@ void wolfSSL_sk_X509_EXTENSION_pop_free(
 }
 
 #if defined(HAVE_ECC)
-size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_BUILTIN_CURVE *r, size_t nitems)
-{
-    size_t x;
-    size_t eccSetCnt = 0;
-    int eccEnum;
-
-    WOLFSSL_ENTER("wolfSSL_EC_get_builtin_curves");
-
-    for (x = 0; ecc_sets[x].size != 0; x++) {
-        eccSetCnt++;
-    }
-
-    if (r == NULL || (int)nitems < 1)
-        return eccSetCnt;
-
-    for (x = 0; x < nitems; x++) {
-        if (x < eccSetCnt) {
-            eccEnum = ecc_sets[x].id;
-            /* Convert enum value in ecc_curve_id to OpenSSL NID */
-            r[x].nid = EccEnumToNID(eccEnum);
-            r[x].comment = ecc_sets[x].name;
-        }
-        else
-            break;
-    }
-
-    return eccSetCnt;
-}
-
 /* Copies ecc_key into new WOLFSSL_EC_KEY object
  *
  * src  : EC_KEY to duplicate. If EC_KEY is not null, create new EC_KEY and copy
@@ -33793,7 +33764,7 @@ int wolfSSL_EC_POINT_is_at_infinity(const WOLFSSL_EC_GROUP *group,
 
 /* End EC_POINT */
 
-size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_builtin_curve *r, size_t nitems)
+size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_BUILTIN_CURVE *r, size_t nitems)
 {
     size_t ecc_sets_count;
     size_t i, min_nitems;
@@ -33807,7 +33778,7 @@ size_t wolfSSL_EC_get_builtin_curves(WOLFSSL_EC_builtin_curve *r, size_t nitems)
     min_nitems = nitems < ecc_sets_count ? nitems : ecc_sets_count;
 
     for (i = 0; i < min_nitems; i++) {
-        r[i].nid = ecc_sets[i].id;
+        r[i].nid = EccEnumToNID(ecc_sets[i].id);
         r[i].comment = ecc_sets[i].name;
     }
 
