@@ -46,8 +46,6 @@ WOLFSSL_API void *wolfSSL_OPENSSL_malloc(size_t a);
 #define SSLeay_version wolfSSLeay_version
 #define SSLeay wolfSSLeay
 
-#define OpenSSL_version wolfSSLeay_version
-
 #ifdef WOLFSSL_QT
     #define SSLEAY_VERSION 0x10001000L
 #else
