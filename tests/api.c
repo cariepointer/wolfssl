@@ -2009,39 +2009,6 @@ static void test_wolfSSL_EVP_CIPHER_CTX()
 }
 #endif /* OPENSSL_EXTRA */
 
-#if defined(OPENSSL_EXTRA)
-/* Test function for various EVP_cipher methods.
- */
-static void test_wolfSSL_EVP_CIPHER_CTX(void)
-{
-#if !defined(NO_AES) && defined(HAVE_AES_CBC)
-    EVP_CIPHER_CTX evpCipherContext;
-    EVP_CIPHER_CTX *ctx = &evpCipherContext;
-    const EVP_CIPHER* type = NULL;
-    int keylen = 0;
-
-    printf(testingFmt, "test_wolfSSL_EVP_CIPHER_CTX");
-
-    /* EVP_AES_128_CBC used as an example */
-    AssertNotNull(type = EVP_aes_128_cbc());
-    /* below test indirectly tests EVP_CIPHER_CTX_init */
-    AssertIntEQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_INIT, 0, NULL), WOLFSSL_SUCCESS);
-    AssertNotNull(ctx);
-    AssertIntEQ(EVP_CipherInit(NULL, NULL, NULL, NULL, 0), WOLFSSL_FAILURE);
-    AssertIntEQ(EVP_CipherInit(ctx, type, NULL, NULL, 0), WOLFSSL_SUCCESS);
-    AssertIntEQ((keylen = EVP_CIPHER_CTX_key_length(ctx)), 16);
-    AssertIntEQ(EVP_CIPHER_CTX_set_key_length(NULL, 0), WOLFSSL_FAILURE);
-    /* below test indirectly tests EVP_CIPHER_CTX_set_key_length */
-    AssertIntEQ(EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_SET_KEY_LENGTH, keylen,
-                                    NULL), WOLFSSL_SUCCESS);
-
-    EVP_CIPHER_CTX_cleanup(ctx);
-#endif
-
-    printf(resultFmt, passed);
-}
-#endif
-
 /*----------------------------------------------------------------------------*
  | IO
  *----------------------------------------------------------------------------*/
@@ -26094,53 +26061,6 @@ static void test_wolfSSL_DH_check(void)
 #endif /* !NO_DH  && !NO_DSA */
 }
 
-static void test_wolfSSL_EC_get_builtin_curves(void)
-{
-#if defined(HAVE_ECC)
-    /* If this test fails then perhaps ecc_sets was updated past 27 */
-    size_t max_items = 27;
-    size_t nitems = 12;
-    size_t numCurves, x;
-    int eccEnum;
-    EC_builtin_curve r[max_items];
-
-    printf(testingFmt, "wolfSSL_EC_get_builtin_curves");
-    SSL_library_init();
-
-    /* Test invalid NULL EC_builtin_curve */
-    numCurves = EC_get_builtin_curves(NULL,nitems);
-    AssertIntEQ(numCurves,max_items);
-
-    /* Test invalid nitems */
-    numCurves = EC_get_builtin_curves(r,-1);
-    AssertIntEQ(numCurves,max_items);
-
-    /* Test very large nitems */
-    numCurves = EC_get_builtin_curves(r,1000);
-    AssertIntEQ(numCurves,max_items);
-
-    /* Test that passed in nitems matches return numCurves */
-    numCurves = EC_get_builtin_curves(r,nitems);
-    AssertIntEQ(numCurves,max_items);
-
-    /* Test if the EC_builtin_curve name and nid match
-     * wc_ecc_get_curve_id_from_name
-     */
-    for (x = 0; x < nitems; x++) {
-        if (x < numCurves) {
-            eccEnum = wc_ecc_get_curve_id_from_name(r[x].comment);
-            /* Convert OpenSSL NID back to internal enum value */
-            AssertIntEQ(r[x].nid, EccEnumToNID(eccEnum));
-        }
-        else
-            break;
-    }
-
-    printf(resultFmt, passed);
-
-#endif /* HAVE_ECC */
-}
-
 static void test_wolfSSL_EVP_PKEY_assign(void)
 {
 #if defined(OPENSSL_ALL)
@@ -30109,7 +30029,6 @@ void ApiTest(void)
     test_wolfSSL_EVP_PKEY_set1_get1_DH();
     test_wolfSSL_CTX_ctrl();
     test_wolfSSL_DH_check();
-    test_wolfSSL_EC_get_builtin_curves();
     test_wolfSSL_EVP_PKEY_assign();
     test_wolfSSL_OBJ_ln();
     test_wolfSSL_OBJ_sn();
