@@ -18957,7 +18957,7 @@ static void test_wolfSSL_certs(void)
     AssertIntEQ(crit, -1);
     sk_ASN1_OBJECT_free(sk);
 
-    sk = (STACK_OF(ASN1_OBJECT)*)X509_get_ext_d2i(x509, NID_subject_alt_name,
+    sk = (STACK_OF(GENERAL_NAME)*)X509_get_ext_d2i(x509, NID_subject_alt_name,
             &crit, NULL);
     /* AssertNotNull(sk); no alt names set */
     sk_GENERAL_NAME_free(sk);

@@ -9100,9 +9100,16 @@ void* wolfSSL_X509_get_ext_d2i(const WOLFSSL_X509* x509, int nid, int* c,
                         wolfSSL_sk_free(sk);
                         return NULL;
                     }
+                    gn->d.dNSName = wolfSSL_ASN1_STRING_new();
+                    if (gn->d.dNSName == NULL) {
+                        WOLFSSL_MSG("ASN1_STRING_new failed\n");
+                        wolfSSL_GENERAL_NAME_free(gn);
+                        wolfSSL_sk_free(sk);
+                        return NULL;
+                    }
 
                     gn->type = dns->type;
-                    gn->d.ia5->length = (int)XSTRLEN(dns->name);
+                    gn->d.ia5->length = dns->len;
                     if (wolfSSL_ASN1_STRING_set(gn->d.ia5, dns->name,
                                 gn->d.ia5->length) != WOLFSSL_SUCCESS) {
                         WOLFSSL_MSG("ASN1_STRING_set failed");
@@ -19062,39 +19069,6 @@ WOLFSSL_GENERAL_NAME* wolfSSL_GENERAL_NAME_new(void)
         wolfSSL_GENERAL_NAME_free(gn);
         return NULL;
     }
-    gn->d.dNSName = wolfSSL_ASN1_STRING_new();
-    if (gn->d.dNSName == NULL) {
-        WOLFSSL_MSG("Error Creating: dNSName");
-        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
-        return NULL;
-    }
-    gn->d.uniformResourceIdentifier = wolfSSL_ASN1_STRING_new();
-    if (gn->d.uniformResourceIdentifier == NULL) {
-        WOLFSSL_MSG("Error Creating: uniformResourceIdentifier");
-        wolfSSL_ASN1_STRING_free(gn->d.ia5);
-        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
-        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
-        return NULL;
-    }
-    gn->d.iPAddress = wolfSSL_ASN1_STRING_new();
-    if (gn->d.iPAddress == NULL) {
-        WOLFSSL_MSG("Error Creating: iPAddress");
-        wolfSSL_ASN1_STRING_free(gn->d.ia5);
-        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
-        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
-        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
-        return NULL;
-    }
-    gn->d.registeredID = wolfSSL_ASN1_OBJECT_new();
-    if (gn->d.registeredID == NULL) {
-        WOLFSSL_MSG("Error Creating: registeredID");
-        wolfSSL_ASN1_STRING_free(gn->d.ia5);
-        wolfSSL_ASN1_STRING_free(gn->d.dNSName);
-        wolfSSL_ASN1_STRING_free(gn->d.uniformResourceIdentifier);
-        wolfSSL_ASN1_STRING_free(gn->d.iPAddress);
-        XFREE(gn, NULL, DYNAMIC_TYPE_OPENSSL);
-        return NULL;
-    }
     return gn;
 }
 
@@ -19113,6 +19087,7 @@ int wolfSSL_sk_GENERAL_NAME_push(WOLF_STACK_OF(WOLFSSL_GENERAL_NAME)* sk,
     if (sk->data.gn == NULL) {
         sk->data.gn = gn;
         sk->num += 1;
+
         return WOLFSSL_SUCCESS;
     }
 
@@ -19216,6 +19191,7 @@ void wolfSSL_sk_GENERAL_NAME_pop_free(WOLFSSL_STACK* sk,
 
 void wolfSSL_sk_GENERAL_NAME_free(WOLFSSL_STACK* sk)
 {
+    WOLFSSL_ENTER("sk_GENERAL_NAME_free");
     wolfSSL_sk_GENERAL_NAME_pop_free(sk, NULL);
 }
 
