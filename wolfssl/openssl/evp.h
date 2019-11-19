@@ -719,6 +719,11 @@ typedef WOLFSSL_EVP_CIPHER_CTX EVP_CIPHER_CTX;
 #define wolfSSL_OPENSSL_add_all_algorithms_noconf wolfSSL_OpenSSL_add_all_algorithms_noconf
 #define wolfSSL_OPENSSL_add_all_algorithms_conf   wolfSSL_OpenSSL_add_all_algorithms_conf
 
+/* provides older OpenSSL API compatibility  */
+#define OPENSSL_add_all_algorithms        OpenSSL_add_all_algorithms
+#define OPENSSL_add_all_algorithms_noconf OpenSSL_add_all_algorithms_noconf
+#define OPENSSL_add_all_algorithms_conf   OpenSSL_add_all_algorithms_conf
+
 #define NO_PADDING_BLOCK_SIZE      1
 
 #define PKCS5_PBKDF2_HMAC_SHA1     wolfSSL_PKCS5_PBKDF2_HMAC_SHA1

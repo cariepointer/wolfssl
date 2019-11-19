@@ -8274,7 +8274,7 @@ WOLFSSL_X509_EXTENSION* wolfSSL_X509_set_ext(WOLFSSL_X509* x509, int loc)
                         }
 
                         gn->type = dns->type;
-                        gn->d.ia5->length = (int)XSTRLEN(dns->name);
+                        gn->d.ia5->length = dns->len;
                         if (wolfSSL_ASN1_STRING_set(gn->d.ia5, dns->name,
                                     gn->d.ia5->length) != WOLFSSL_SUCCESS) {
                             WOLFSSL_MSG("ASN1_STRING_set failed");
@@ -21211,6 +21211,7 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
         }
         if (data != NULL) {
             XMEMCPY(asn1->data, data, sz);
+            asn1->data[sz] = '\0';
         }
         asn1->length = sz;
 
@@ -21301,7 +21302,7 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
                           (int)XSTRLEN("        Version:")) <= 0) {
                 return WOLFSSL_FAILURE;
             }
-            XSNPRINTF(tmp, sizeof(tmp), " %d (0x%x)", version, (byte)version-1);
+            XSNPRINTF(tmp, sizeof(tmp), " %d (0x%x)\n", version, (byte)version-1);
             if (wolfSSL_BIO_write(bio, tmp, (int)XSTRLEN(tmp)) <= 0) {
                 return WOLFSSL_FAILURE;
             }
@@ -21461,7 +21462,7 @@ int wolfSSL_X509_cmp(const WOLFSSL_X509 *a, const WOLFSSL_X509 *b)
                     tmp, sizeof(tmp)) != WOLFSSL_SUCCESS) {
                     if (GetTimeString(x509->notAfter.data, ASN_GENERALIZED_TIME,
                         tmp, sizeof(tmp)) != WOLFSSL_SUCCESS) {
-                        WOLFSSL_MSG("Error getting not before date");
+                        WOLFSSL_MSG("Error getting not after date");
                         return WOLFSSL_FAILURE;
                     }
                 }
@@ -23689,10 +23690,12 @@ int wolfSSL_X509_verify_cert(WOLFSSL_X509_STORE_CTX* ctx)
         afterDate = ctx->current_cert->notAfter.data;
         beforeDate = ctx->current_cert->notBefore.data;
 
-        if (ValidateDate(afterDate, *afterDate, AFTER) < 1) {
+        if (ValidateDate(afterDate, ctx->current_cert->notAfter.type,
+                                                                   AFTER) < 1) {
             error = X509_V_ERR_CERT_HAS_EXPIRED;
         }
-        else if (ValidateDate(beforeDate, *beforeDate, BEFORE) < 1) {
+        else if (ValidateDate(beforeDate, ctx->current_cert->notBefore.type,
+                                                                  BEFORE) < 1) {
             error = X509_V_ERR_CERT_NOT_YET_VALID;
         }
 
@@ -27526,7 +27529,7 @@ void wolfSSL_BASIC_CONSTRAINTS_free(WOLFSSL_BASIC_CONSTRAINTS *bc)
         WOLFSSL_MSG("Argument is NULL");
         return;
     }
-    if(bc->pathlen) {
+    if (bc->pathlen) {
         wolfSSL_ASN1_INTEGER_free(bc->pathlen);
     }
     XFREE(bc, NULL, DYNAMIC_TYPE_OPENSSL);
