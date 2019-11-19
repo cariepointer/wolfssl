@@ -9024,8 +9024,8 @@ int CopyDecodedToX509(WOLFSSL_X509* x509, DecodedCert* dCert)
         else
             x509->notBefore.length = 0;
         if (dCert->afterDateLen > 0) {
-            minSz = min(dCert->beforeDate[1], MAX_DATE_SZ);
-            x509->notAfter.type = dCert->beforeDate[0];
+            minSz = min(dCert->afterDate[1], MAX_DATE_SZ);
+            x509->notAfter.type = dCert->afterDate[0];
             x509->notAfter.length = minSz;
             XMEMCPY(x509->notAfter.data, &dCert->afterDate[2], minSz);
         }
@@ -9139,6 +9139,19 @@ int CopyDecodedToX509(WOLFSSL_X509* x509, DecodedCert* dCert)
             ret = MEMORY_E;
         }
     }
+    #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    if (dCert->extAuthInfoCaIssuer != NULL && dCert->extAuthInfoCaIssuerSz > 0) {
+        x509->authInfoCaIssuer = (byte*)XMALLOC(dCert->extAuthInfoCaIssuerSz, x509->heap,
+                DYNAMIC_TYPE_X509_EXT);
+        if (x509->authInfoCaIssuer != NULL) {
+            XMEMCPY(x509->authInfoCaIssuer, dCert->extAuthInfoCaIssuer, dCert->extAuthInfoCaIssuerSz);
+            x509->authInfoCaIssuerSz = dCert->extAuthInfoCaIssuerSz;
+        }
+        else {
+            ret = MEMORY_E;
+        }
+    }
+    #endif
     x509->basicConstSet = dCert->extBasicConstSet;
     x509->basicConstCrit = dCert->extBasicConstCrit;
     x509->basicConstPlSet = dCert->pathLengthSet;

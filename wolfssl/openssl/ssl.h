@@ -121,6 +121,7 @@ typedef WOLFSSL_X509_VERIFY_PARAM X509_VERIFY_PARAM;
 #define _STACK OPENSSL_STACK
 
 #define CONF_get1_default_config_file   wolfSSL_CONF_get1_default_config_file
+typedef STACK_OF(ACCESS_DESCRIPTION) AUTHORITY_INFO_ACCESS;
 
 #ifdef WOLFSSL_QT
     #define CRYPTO_free(xp) {if((xp)) wolfSSL_Free((xp));}
