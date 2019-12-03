@@ -577,6 +577,7 @@ long wolfSSL_BIO_ctrl(WOLFSSL_BIO *bio, int cmd, long larg, void *parg)
     }
 
     switch(cmd) {
+        case BIO_CTRL_PENDING:
         case BIO_CTRL_WPENDING:
             ret = (long)wolfSSL_BIO_ctrl_pending(bio);
             break;
