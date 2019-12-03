@@ -19116,14 +19116,8 @@ void wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(WOLFSSL_STACK* sk,
 
        if (f)
            f(tmp->data.access);
-       else {
-           if(tmp->data.access->method) {
-               wolfSSL_ASN1_OBJECT_free(tmp->data.access->method);
-           }
-           if(tmp->data.access->location) {
-               wolfSSL_GENERAL_NAME_free(tmp->data.access->location);
-           }
-       }
+       else
+           wolfSSL_ACCESS_DESCRIPTION_free(tmp->data.access);
        tmp->data.access = NULL;
        XFREE(tmp, NULL, DYNAMIC_TYPE_ASN1);
        sk->num -= 1;
@@ -19132,7 +19126,7 @@ void wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(WOLFSSL_STACK* sk,
    /* free head of stack */
    if (sk->num == 1) {
         if (f)
-           f(sk->data.access);
+            f(sk->data.access);
         else {
             if(sk->data.access->method) {
 
@@ -19150,6 +19144,19 @@ void wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(WOLFSSL_STACK* sk,
 void wolfSSL_sk_ACCESS_DESCRIPTION_free(WOLFSSL_STACK* sk)
 {
     wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(sk, NULL);
+}
+
+void wolfSSL_ACCESS_DESCRIPTION_free(WOLFSSL_ACCESS_DESCRIPTION* access)
+{
+    WOLFSSL_ENTER("wolfSSL_ACCESS_DESCRIPTION_free");
+    if (access == NULL)
+        return;
+
+    if (access->method)
+        wolfSSL_ASN1_OBJECT_free(access->method);
+    if (access->location)
+        wolfSSL_GENERAL_NAME_free(access->location);
+    access = NULL;
 }
 #endif
 
@@ -27477,6 +27484,9 @@ int wolfSSL_sk_num(WOLFSSL_STACK* sk)
 
 void* wolfSSL_sk_value(WOLFSSL_STACK* sk, int i)
 {
+#if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
+    int offset = i;
+#endif
     WOLFSSL_ENTER("wolfSSL_sk_value");
 
     for (; sk != NULL && i > 0; i--)
@@ -27489,7 +27499,7 @@ void* wolfSSL_sk_value(WOLFSSL_STACK* sk, int i)
             return (void*)sk->data.x509;
         case STACK_TYPE_CIPHER:
         #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
-            sk->data.cipher.offset = i;
+            sk->data.cipher.offset = offset;
         #endif
             return (void*)&sk->data.cipher;
         case STACK_TYPE_GEN_NAME:
@@ -27562,7 +27572,7 @@ void wolfSSL_sk_GENERIC_pop_free(WOLFSSL_STACK* sk,
 {
     WOLFSSL_STACK* node;
     WOLFSSL_STACK* tmp;
-    WOLFSSL_ENTER("wolfSSL_sk_GENERIC_free");
+    WOLFSSL_ENTER("wolfSSL_sk_GENERIC_pop_free");
 
     if (sk == NULL)
         return;
@@ -27587,7 +27597,7 @@ int wolfSSL_sk_GENERIC_push(WOLFSSL_STACK* sk, void* generic)
 {
     WOLFSSL_STACK* node;
 
-    WOLFSSL_ENTER("wolfSSL_sk_CIPHER_push");
+    WOLFSSL_ENTER("wolfSSL_sk_GENERIC_push");
 
     if (sk == NULL || generic == NULL) {
         return WOLFSSL_FAILURE;
@@ -27639,7 +27649,7 @@ void wolfSSL_sk_pop_free(WOLF_STACK_OF(WOLFSSL_ASN1_OBJECT)* sk,
         #if defined(OPENSSL_ALL) || defined (WOLFSSL_QT)
         case STACK_TYPE_ACCESS_DESCRIPTION:
             wolfSSL_sk_ACCESS_DESCRIPTION_pop_free(sk,
-                                   (void (*)(WOLFSSL_ACCESS_DESCRIPTION*))func);
+                                                wolfSSL_ACCESS_DESCRIPTION_free);
             break;
         #endif
         case STACK_TYPE_X509:
@@ -31843,7 +31853,7 @@ int wolfSSL_PEM_write_bio_RSAPrivateKey(WOLFSSL_BIO* bio, WOLFSSL_RSA* key,
         /* 5 > size of n, d, p, q, d%(p-1), d(q-1), 1/q%p, e + ASN.1 additional
          *  informations
          */
-        derMax = 5 * wolfSSL_RSA_size(key) + AES_BLOCK_SIZE;
+        derMax = 5 * wolfSSL_RSA_size(key) + (2 * AES_BLOCK_SIZE);
 
         derBuf = (byte*)XMALLOC(derMax, bio->heap, DYNAMIC_TYPE_TMP_BUFFER);
         if (derBuf == NULL) {
@@ -41454,16 +41464,19 @@ int wolfSSL_CIPHER_get_bits(const WOLFSSL_CIPHER *c, int *alg_bits)
 {
     int ret = WOLFSSL_FAILURE;
     WOLFSSL_ENTER("wolfSSL_CIPHER_get_bits");
-    if(c != NULL && c->ssl != NULL) {
-        #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
-            ret = c->bits;
-        #else
-            ret = 8 * c->ssl->specs.key_size;
-        #endif
-        if(alg_bits != NULL) {
+
+    #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
+    (void)alg_bits;
+    if (c!= NULL)
+        ret = c->bits;
+    #else
+    if (c != NULL && c->ssl != NULL) {
+        ret = 8 * c->ssl->specs.key_size;
+        if (alg_bits != NULL) {
             *alg_bits = ret;
         }
     }
+    #endif
     return ret;
 }
 
