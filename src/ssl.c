@@ -34820,20 +34820,16 @@ WOLFSSL_EVP_PKEY* wolfSSL_PEM_read_bio_PrivateKey(WOLFSSL_BIO* bio,
     if (pem_read_bio_key(bio, cb, pass, PRIVATEKEY_TYPE, &keyFormat, &der) >= 0) {
         int type = -1;
         const unsigned char* ptr = der->buffer;
+
         if (keyFormat) {
-            if (keyFormat == 1) {
-                /* ECC key if format is 1 */
-                type = EVP_PKEY_EC;
-            }
-            else if (keyFormat == 2) {
-                /* DSA key if format is 2 */
+            /* keyFormat is Key_Sum enum */
+            if (keyFormat == ECDSAk)
+                type =  EVP_PKEY_EC;
+            else if (keyFormat == DSAk)
                 type = EVP_PKEY_DSA;
-            }
             #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
-            else if (keyFormat == 3) {
-                /* DSA key if format is 2 */
+            else if (keyFormat == DHk)
                 type = EVP_PKEY_DH;
-            }
             #endif
         }
         else {
