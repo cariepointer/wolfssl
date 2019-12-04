@@ -10211,9 +10211,6 @@ int PemToDer(const unsigned char* buff, long longSz, int type,
     int         ret         = 0;
     int         sz          = (int)longSz;
     int         encrypted_key = 0;
-    #ifndef NO_DSA
-    int         dsaFlag = 0;
-    #endif
     DerBuffer*  der;
 #if defined(HAVE_PKCS8) || defined(WOLFSSL_ENCRYPTED_KEYS)
     word32      algId = 0;
@@ -10277,26 +10274,21 @@ int PemToDer(const unsigned char* buff, long longSz, int type,
         return ASN_NO_PEM_HEADER;
     }
 
-#ifndef NO_DSA
-    if (header == BEGIN_DSA_PRIV)
-        dsaFlag = 1;
-#endif
-
     headerEnd += XSTRLEN(header);
 
     /* eat end of line characters */
     headerEnd = SkipEndOfLineChars(headerEnd, bufferEnd);
 
     if (type == PRIVATEKEY_TYPE) {
+        /* keyFormat is Key_Sum enum */
         if (keyFormat) {
         #ifdef HAVE_ECC
-            *keyFormat = (header == BEGIN_EC_PRIV) ? 1 : 0;
-        #else
-            *keyFormat = 0;
+            if (header == BEGIN_EC_PRIV)
+                *keyFormat = ECDSAk;
         #endif
-        #ifndef NO_DSA
-            if (dsaFlag)
-                *keyFormat = 2;
+        #if !defined(NO_DSA)
+            if (header == BEGIN_DSA_PRIV)
+                *keyFormat = DSAk;
         #endif
         }
     }
@@ -10357,14 +10349,17 @@ int PemToDer(const unsigned char* buff, long longSz, int type,
         /* pkcs8 key, convert and adjust length */
         if ((ret = ToTraditional_ex(der->buffer, der->length, &algId)) > 0) {
             der->length = ret;
+            #if !defined(NO_DSA)
             if (algId == DSAk)
-                *keyFormat = 2;
-            else if (algId == ECDSAk)
-                *keyFormat = 1;
+                *keyFormat = DSAk;
+            #endif
+            #ifdef HAVE_ECC
+            if (algId == ECDSAk)
+                *keyFormat = ECDSAk;
+            #endif
             #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
-            else if (algId == DHk) {
-                *keyFormat = 3;
-            }
+            if (algId == DHk)
+                *keyFormat = DHk;
             #endif
         }
         else {
@@ -10410,12 +10405,12 @@ int PemToDer(const unsigned char* buff, long longSz, int type,
                 if (ret >= 0) {
                     der->length = ret;
                     if ((algId == ECDSAk) && (keyFormat != NULL))
-                        *keyFormat = 1;
+                        *keyFormat = ECDSAk;
                     else if ((algId == DSAk) && (keyFormat != NULL))
-                        *keyFormat = 2;
+                        *keyFormat = DSAk;
                     #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
                     else if ((algId == DHk) && (keyFormat != NULL))
-                        *keyFormat = 3;
+                        *keyFormat = DHk;
                     #endif
                     ret = 0;
                 }
