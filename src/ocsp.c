@@ -996,6 +996,7 @@ int wolfSSL_OCSP_id_get0_info(WOLFSSL_ASN1_STRING **name,
         }
 
         #ifdef WOLFSSL_QT
+            /* Serial number starts at 0 index of ser->data */
             XMEMCPY(&ser->data[i], cid->serial, cid->serialSz);
             ser->length = cid->serialSz;
         #else
