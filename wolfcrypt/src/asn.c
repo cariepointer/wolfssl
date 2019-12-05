@@ -4550,7 +4550,6 @@ int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
 {
     int    length;
     int    ret = 0;
-    int    temp = 0;
     word32 oid;
 
     if (input == NULL || inOutIdx == NULL || key == NULL)
@@ -4569,11 +4568,9 @@ int DsaPublicKeyDecode(const byte* input, word32* inOutIdx, DsaKey* key,
         if (GetSequence(input, inOutIdx, &length, inSz) < 0)
             return ASN_PARSE_E;
 
-        temp = GetObjectId(input, inOutIdx, &oid, oidIgnoreType, inSz);
-        if (temp != 0) {
-            ret = temp;
+        ret = GetObjectId(input, inOutIdx, &oid, oidIgnoreType, inSz);
+        if (ret != 0)
             return ret;
-        }
 
         if (GetSequence(input, inOutIdx, &length, inSz) < 0)
             return ASN_PARSE_E;
@@ -4668,8 +4665,7 @@ static WC_INLINE void FreeTmpDsas(byte** tmps, void* heap)
 int SetDsaPublicKey(byte* output, DsaKey* key,
                            int outLen, int with_header)
 {
-
-/* p, g, q = DSA params, y = public exponent */
+    /* p, g, q = DSA params, y = public exponent */
 #ifdef WOLFSSL_SMALL_STACK
     byte* p = NULL;
     byte* g = NULL;
@@ -4684,14 +4680,7 @@ int SetDsaPublicKey(byte* output, DsaKey* key,
     byte innerSeq[MAX_SEQ_SZ];
     byte outerSeq[MAX_SEQ_SZ];
     byte bitString[1 + MAX_LENGTH_SZ + 1];
-    int  pSz;
-    int  gSz;
-    int  qSz;
-    int  ySz;
-    int  innerSeqSz;
-    int  outerSeqSz;
-    int  bitStringSz = 0;
-    int  idx;
+    int  idx, pSz, gSz, qSz, ySz, innerSeqSz, outerSeqSz, bitStringSz = 0;
 
     WOLFSSL_ENTER("SetDsaPublicKey");
 
@@ -5296,7 +5285,6 @@ static int GetKey(DecodedCert* cert)
         case DSAk:
         {
             int ret;
-
             ret = GetSequence(cert->source, &cert->srcIdx, &length,
                            cert->maxIdx);
             if (ret < 0)
@@ -5313,7 +5301,7 @@ static int GetKey(DecodedCert* cert)
                 return ret;
 
             ret = CheckBitString(cert->source, &cert->srcIdx, &length,
-                                 cert->maxIdx, 1, NULL);
+                                                         cert->maxIdx, 1, NULL);
             if (ret != 0)
                 return ret;
 
@@ -7725,7 +7713,7 @@ static int DecodeAltNames(const byte* input, int sz, DecodedCert* cert)
             length -= strLen;
             idx    += strLen;
         }
-#endif
+#endif /* WOLFSSL_QT || OPENSSL_ALL */
 #endif /* IGNORE_NAME_CONSTRAINTS */
 #ifdef WOLFSSL_SEP
         else if (b == (ASN_CONTEXT_SPECIFIC | ASN_CONSTRUCTED | ASN_OTHER_TYPE))
@@ -8353,8 +8341,8 @@ exit:
     #endif
 
         WOLFSSL_ENTER("DecodeCertPolicy");
-        /* Check if valid cert pointer before dereferencing below */
         #if defined(WOLFSSL_SEP) || defined(WOLFSSL_CERT_EXT)
+        /* Check if cert is null before dereferencing below */
         if (cert == NULL)
             return BAD_FUNC_ARG;
         #endif

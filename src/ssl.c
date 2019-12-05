@@ -5011,6 +5011,7 @@ WOLFSSL_ABI
 int wolfSSL_Init(void)
 {
     WOLFSSL_ENTER("wolfSSL_Init");
+    wolfSSL_Debugging_ON();
 
     if (initRefCount == 0) {
         /* Initialize crypto for use with TLS connection */
@@ -6202,8 +6203,9 @@ int wolfSSL_CertManagerVerifyBuffer(WOLFSSL_CERT_MANAGER* cm, const byte* buff,
         ret = ParseCertRelative(cert, CERT_TYPE, 1, cm);
 
 #if defined(OPENSSL_ALL) || defined(WOLFSSL_QT)
-     if (ret == ASN_NO_SIGNER_E && cert->selfSigned)
-         ret = ASN_SELF_SIGNED_E;
+    /* ret needs to be self-singer error for Qt compat */
+    if (ret == ASN_NO_SIGNER_E && cert->selfSigned)
+        ret = ASN_SELF_SIGNED_E;
 #endif
 
 #ifdef HAVE_CRL
@@ -31104,8 +31106,6 @@ int wolfSSL_EVP_PKEY_set1_RSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_RSA *key)
     pkey->ownRsa = 0; /* pkey does not own RSA */
     pkey->type   = EVP_PKEY_RSA;
     if (key->inSet == 0) {
-        WOLFSSL_MSG("No RSA internal set, do it");
-
         if (SetRsaInternal(key) != WOLFSSL_SUCCESS) {
             WOLFSSL_MSG("SetRsaInternal failed");
             return WOLFSSL_FAILURE;
@@ -31190,7 +31190,6 @@ int wolfSSL_EVP_PKEY_set1_DSA(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DSA *key)
     pkey->ownDsa = 0; /* pkey does not own DSA */
     pkey->type   = EVP_PKEY_DSA;
     if (key->inSet == 0) {
-        WOLFSSL_MSG("No DSA internal set, do it");
         if (SetDsaInternal(key) != WOLFSSL_SUCCESS) {
             WOLFSSL_MSG("SetDsaInternal failed");
             return WOLFSSL_FAILURE;
@@ -31270,7 +31269,7 @@ WOLFSSL_DSA* wolfSSL_EVP_PKEY_get1_DSA(WOLFSSL_EVP_PKEY* key)
         }
     }
     else {
-        WOLFSSL_MSG("WOLFSSL_EVP_PKEY does not hold an DSA key");
+        WOLFSSL_MSG("WOLFSSL_EVP_PKEY does not hold a DSA key");
         wolfSSL_DSA_free(local);
         local = NULL;
     }
@@ -31346,17 +31345,18 @@ int wolfSSL_EVP_PKEY_set1_DH(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_DH *key)
 
     WOLFSSL_ENTER("wolfSSL_EVP_PKEY_set1_DH");
 
-    if((pkey == NULL) || (key == NULL))return WOLFSSL_FAILURE;
-    if (pkey->dh != NULL && pkey->ownDh == 1) {
+    if (pkey == NULL || key == NULL)
+        return WOLFSSL_FAILURE;
+
+    if (pkey->dh != NULL && pkey->ownDh == 1)
         wolfSSL_DH_free(pkey->dh);
-    }
+
     pkey->dh    = key;
     pkey->ownDh = 0; /* pkey does not own DH */
     pkey->type  = EVP_PKEY_DH;
     if (key->inSet == 0) {
-        WOLFSSL_MSG("No DH internal set, do it\n");
         if (SetDhInternal(key) != WOLFSSL_SUCCESS) {
-            WOLFSSL_MSG("SetDhInternal failed\n");
+            WOLFSSL_MSG("SetDhInternal failed");
             return WOLFSSL_FAILURE;
         }
     }
@@ -32720,10 +32720,12 @@ int wolfSSL_EVP_PKEY_set1_EC_KEY(WOLFSSL_EVP_PKEY *pkey, WOLFSSL_EC_KEY *key)
     byte* derBuf = NULL;
 
     WOLFSSL_ENTER("wolfSSL_EVP_PKEY_set1_EC_KEY");
-    if((pkey == NULL) || (key == NULL))return WOLFSSL_FAILURE;
-    if (pkey->ecc != NULL && pkey->ownEcc == 1) {
+    if (pkey == NULL || key == NULL)
+        return WOLFSSL_FAILURE;
+
+    if (pkey->ecc != NULL && pkey->ownEcc == 1)
         wolfSSL_EC_KEY_free(pkey->ecc);
-    }
+
     pkey->ecc    = key;
     pkey->ownEcc = 0; /* pkey does not own ECC */
     pkey->type   = EVP_PKEY_EC;
@@ -34173,8 +34175,7 @@ int wolfSSL_PEM_write_bio_EC_PUBKEY(WOLFSSL_BIO* bio, WOLFSSL_EC_KEY* ec)
     pkey->ownEcc = 0; /* pkey does not own ECC */
     pkey->type = EVP_PKEY_EC;
 
-    /* 4 > size of pub, priv + ASN.1 additional informations
-     */
+    /* 4 > size of pub, priv + ASN.1 additional information */
     der_max_len = 4 * wc_ecc_size((ecc_key*)ec->internal) + AES_BLOCK_SIZE;
 
     derBuf = (byte*)XMALLOC(der_max_len, bio->heap, DYNAMIC_TYPE_TMP_BUFFER);
@@ -34485,8 +34486,7 @@ int wolfSSL_PEM_write_bio_DSAPrivateKey(WOLFSSL_BIO* bio, WOLFSSL_DSA* dsa,
     pkey->dsa    = dsa;
     pkey->ownDsa = 0;
 
-    /* 4 > size of pub, priv, p, q, g + ASN.1 additional information
-     */
+    /* 4 > size of pub, priv, p, q, g + ASN.1 additional information */
     der_max_len = 4 * wolfSSL_BN_num_bytes(dsa->g) + AES_BLOCK_SIZE;
 
     derBuf = (byte*)XMALLOC(der_max_len, bio->heap, DYNAMIC_TYPE_TMP_BUFFER);
@@ -34552,8 +34552,7 @@ int wolfSSL_PEM_write_bio_DSA_PUBKEY(WOLFSSL_BIO* bio, WOLFSSL_DSA* dsa)
     pkey->dsa    = dsa;
     pkey->ownDsa = 0;
 
-    /* 4 > size of pub, priv, p, q, g + ASN.1 additional information
-     */
+    /* 4 > size of pub, priv, p, q, g + ASN.1 additional information */
     derMax = 4 * wolfSSL_BN_num_bytes(dsa->g) + AES_BLOCK_SIZE;
 
     derBuf = (byte*)XMALLOC(derMax, bio->heap, DYNAMIC_TYPE_DER);
@@ -34917,14 +34916,15 @@ WOLFSSL_EVP_PKEY* wolfSSL_PEM_read_bio_PrivateKey(WOLFSSL_BIO* bio,
     WOLFSSL_EVP_PKEY* pkey = NULL;
     DerBuffer*         der = NULL;
     int             keyFormat = 0;
+    int                 type = -1;
 
     WOLFSSL_ENTER("wolfSSL_PEM_read_bio_PrivateKey");
 
     if (bio == NULL)
         return pkey;
 
-    if (pem_read_bio_key(bio, cb, pass, PRIVATEKEY_TYPE, &keyFormat, &der) >= 0) {
-        int type = -1;
+    if (pem_read_bio_key(bio, cb, pass, PRIVATEKEY_TYPE, &keyFormat,
+                                                                   &der) >= 0) {
         const unsigned char* ptr = der->buffer;
 
         if (keyFormat) {
@@ -35768,6 +35768,8 @@ int wolfSSL_DSA_LoadDer(WOLFSSL_DSA* dsa, const unsigned char* derBuf, int derSz
     return WOLFSSL_SUCCESS;
 }
 
+/* Loads DSA key from DER buffer. opt = DSA_LOAD_PRIVATE or DSA_LOAD_PUBLIC.
+    returns 1 on success, or 0 on failure.  */
 int wolfSSL_DSA_LoadDer_ex(WOLFSSL_DSA* dsa, const unsigned char* derBuf,
                                                             int derSz, int opt)
 {

@@ -436,7 +436,6 @@ enum Key_Sum {
     #endif
 };
 
-
 #if !defined(NO_AES) || defined(HAVE_PKCS7)
 enum KeyWrap_Sum {
 #ifdef WOLFSSL_AES_128
