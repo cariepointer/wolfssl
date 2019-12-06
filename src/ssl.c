@@ -5011,7 +5011,6 @@ WOLFSSL_ABI
 int wolfSSL_Init(void)
 {
     WOLFSSL_ENTER("wolfSSL_Init");
-    wolfSSL_Debugging_ON();
 
     if (initRefCount == 0) {
         /* Initialize crypto for use with TLS connection */
