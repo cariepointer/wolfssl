@@ -43217,7 +43217,7 @@ int wolfSSL_X509_get_ex_new_index(int idx, void *arg, void *a, void *b, void *c)
 }
 
 #if defined(WOLFSSL_QT) || defined(OPENSSL_ALL)
-int CRYPTO_set_ex_data(WOLFSSL_CRYPTO_EX_DATA* r, int idx, void* arg)
+int wolfSSL_CRYPTO_set_ex_data(WOLFSSL_CRYPTO_EX_DATA* r, int idx, void* arg)
 {
     WOLFSSL_STACK* sk;
     WOLFSSL_ENTER("wolfSSL_CRYPTO_set_ex_data");
@@ -43250,7 +43250,7 @@ int CRYPTO_set_ex_data(WOLFSSL_CRYPTO_EX_DATA* r, int idx, void* arg)
     return WOLFSSL_SUCCESS;
 }
 
-void* CRYPTO_get_ex_data(const WOLFSSL_CRYPTO_EX_DATA* r, int idx)
+void* wolfSSL_CRYPTO_get_ex_data(const WOLFSSL_CRYPTO_EX_DATA* r, int idx)
 {
     void* ex_data;
     WOLFSSL_STACK* sk;
