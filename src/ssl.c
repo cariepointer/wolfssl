@@ -22919,7 +22919,7 @@ int wolfSSL_i2d_X509(WOLFSSL_X509* x509, unsigned char** out)
 
     WOLFSSL_ENTER("wolfSSL_i2d_X509");
 
-    if (x509 == NULL || out == NULL) {
+    if (x509 == NULL) {
         WOLFSSL_LEAVE("wolfSSL_i2d_X509", BAD_FUNC_ARG);
         return BAD_FUNC_ARG;
     }
@@ -40948,9 +40948,12 @@ long wolfSSL_ctrl(WOLFSSL* ssl, int cmd, long opt, void* pt)
 
 long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
 {
+    long ctrl_opt;
     long ret = WOLFSSL_SUCCESS;
 
-    WOLFSSL_ENTER("SSL_CTX_ctrl");
+    WOLFSSL_ENTER("wolfSSL_CTX_ctrl");
+    if (ctx == NULL)
+        return WOLFSSL_FAILURE;
 
     switch (cmd) {
     case SSL_CTRL_CHAIN:
@@ -40964,7 +40967,7 @@ long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
         WOLF_STACK_OF(WOLFSSL_X509)* sk = (WOLF_STACK_OF(WOLFSSL_X509)*) pt;
         WOLFSSL_X509* x509;
         int i;
-        if (!ctx || (opt != 0 && opt != 1)) {
+        if (opt != 0 && opt != 1) {
             ret = WOLFSSL_FAILURE;
             break;
         }
@@ -41005,7 +41008,62 @@ long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
         ret = WOLFSSL_FAILURE;
 #endif
         break;
+
+#if defined(OPENSSL_EXTRA) || defined(HAVE_WEBSERVER)
+    case SSL_CTRL_OPTIONS:
+        WOLFSSL_MSG("Entering Case: SSL_CTRL_OPTIONS.");
+        ctrl_opt = wolfSSL_CTX_set_options(ctx, opt);
+
+        #ifdef WOLFSSL_QT
+        /* Set whether to use client or server cipher preference */
+        if ((ctrl_opt & SSL_OP_CIPHER_SERVER_PREFERENCE)
+                     == SSL_OP_CIPHER_SERVER_PREFERENCE) {
+            WOLFSSL_MSG("Using Server's Cipher Preference.");
+            ctx->useClientOrder = FALSE;
+        } else {
+            WOLFSSL_MSG("Using Client's Cipher Preference.");
+            ctx->useClientOrder = TRUE;
+        }
+        #endif /* WOLFSSL_QT */
+
+        return ctrl_opt;
+#endif /* OPENSSL_EXTRA || HAVE_WEBSERVER */
+    case SSL_CTRL_EXTRA_CHAIN_CERT:
+        WOLFSSL_MSG("Entering Case: SSL_CTRL_EXTRA_CHAIN_CERT.");
+        if (pt == NULL) {
+            WOLFSSL_MSG("Passed in x509 pointer NULL.");
+            ret = WOLFSSL_FAILURE;
+            break;
+        }
+        return wolfSSL_CTX_add_extra_chain_cert(ctx,pt);
+
+#ifndef NO_DH
+    case SSL_CTRL_SET_TMP_DH:
+        WOLFSSL_MSG("Entering Case: SSL_CTRL_SET_TMP_DH.");
+        if (pt == NULL) {
+            WOLFSSL_MSG("Passed in DH pointer NULL.");
+            ret = WOLFSSL_FAILURE;
+            break;
+        }
+        return wolfSSL_CTX_set_tmp_dh(ctx, pt);
+#endif
+
+#ifdef HAVE_ECC
+    case SSL_CTRL_SET_TMP_ECDH:
+        WOLFSSL_MSG("Entering Case: SSL_CTRL_SET_TMP_ECDH.");
+        if (pt == NULL) {
+            WOLFSSL_MSG("Passed in ECDH pointer NULL.");
+            ret = WOLFSSL_FAILURE;
+            break;
+        }
+        return wolfSSL_SSL_CTX_set_tmp_ecdh(ctx,pt);
+#endif
+    case SSL_CTRL_MODE:
+        wolfSSL_CTX_set_mode(ctx,opt);
+        break;
+
     default:
+        WOLFSSL_MSG("CTX_ctrl cmd not implemented");
         ret = WOLFSSL_FAILURE;
         break;
     }
@@ -41014,7 +41072,7 @@ long wolfSSL_CTX_ctrl(WOLFSSL_CTX* ctx, int cmd, long opt, void* pt)
     (void)cmd;
     (void)opt;
     (void)pt;
-    WOLFSSL_LEAVE("SSL_CTX_ctrl", (int)ret);
+    WOLFSSL_LEAVE("wolfSSL_CTX_ctrl", (int)ret);
     return ret;
 }
 
